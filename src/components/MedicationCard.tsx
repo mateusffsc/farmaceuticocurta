@@ -74,10 +74,24 @@ export default function MedicationCard({ medication, doses, clientId, pharmacyId
     <>
       <div className="bg-white rounded-2xl shadow-md active:shadow-lg transition p-4">
         <div className="mb-3">
-          <h3 className="text-lg font-bold text-[#0F3C4C] mb-0.5">
-            {medication.name}
-          </h3>
-          <p className="text-gray-600 text-sm">{medication.dosage}</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-bold text-[#0F3C4C] mb-0.5">
+                {medication.name}
+              </h3>
+              <p className="text-gray-600 text-sm">{medication.dosage}</p>
+            </div>
+            {typeof medication.remaining_doses === 'number' && (
+              <div className="text-right">
+                <div className="inline-flex items-center gap-2 bg-gray-100 text-gray-800 px-2.5 py-1 rounded-lg text-xs font-semibold">
+                  Restantes
+                  <span className="bg-[#0F3C4C] text-white px-2 py-0.5 rounded-md text-xs">
+                    {medication.remaining_doses}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="space-y-2.5">

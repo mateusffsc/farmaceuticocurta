@@ -27,6 +27,7 @@ export type Medication = {
   dosage: string;
   schedules: string;
   total_quantity?: number;
+  remaining_doses?: number;
   treatment_duration_days: number;
   start_date: string;
   notes?: string;
