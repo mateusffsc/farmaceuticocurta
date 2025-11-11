@@ -16,6 +16,8 @@ export type Client = {
   password: string;
   phone?: string;
   date_of_birth?: string;
+  monitor_bp?: boolean;
+  monitor_glucose?: boolean;
   created_at: string;
 };
 

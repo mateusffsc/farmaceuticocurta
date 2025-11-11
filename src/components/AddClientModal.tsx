@@ -9,6 +9,8 @@ type AddClientModalProps = {
     password: string;
     phone?: string;
     date_of_birth?: string;
+    monitor_bp?: boolean;
+    monitor_glucose?: boolean;
   }) => Promise<void>;
 };
 
@@ -19,6 +21,8 @@ export default function AddClientModal({ onClose, onAdd }: AddClientModalProps) 
     password: '',
     phone: '',
     date_of_birth: '',
+    monitor_bp: false,
+    monitor_glucose: false,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -62,6 +66,8 @@ export default function AddClientModal({ onClose, onAdd }: AddClientModalProps) 
         password: formData.password,
         phone: formData.phone.trim() || undefined,
         date_of_birth: formData.date_of_birth || undefined,
+        monitor_bp: formData.monitor_bp,
+        monitor_glucose: formData.monitor_glucose,
       });
     } catch (error: any) {
       setErrors({ general: error.message || 'Erro ao adicionar cliente' });
@@ -171,6 +177,44 @@ export default function AddClientModal({ onClose, onAdd }: AddClientModalProps) 
                 onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F3C4C] focus:border-transparent outline-none"
               />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3">
+            <div className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
+              <div>
+                <p className="text-sm font-medium text-gray-800">Monitorar Pressão Arterial</p>
+                <p className="text-xs text-gray-600">Habilita registro e acompanhamento de PA</p>
+              </div>
+              <label className="inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
+                  checked={formData.monitor_bp}
+                  onChange={(e) => setFormData({ ...formData, monitor_bp: e.target.checked })}
+                />
+                <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-[#0F3C4C] transition relative">
+                  <span className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition peer-checked:translate-x-5" />
+                </div>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
+              <div>
+                <p className="text-sm font-medium text-gray-800">Monitorar Glicemia</p>
+                <p className="text-xs text-gray-600">Habilita registro e acompanhamento de glicose</p>
+              </div>
+              <label className="inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
+                  checked={formData.monitor_glucose}
+                  onChange={(e) => setFormData({ ...formData, monitor_glucose: e.target.checked })}
+                />
+                <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-[#0F3C4C] transition relative">
+                  <span className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition peer-checked:translate-x-5" />
+                </div>
+              </label>
             </div>
           </div>
 

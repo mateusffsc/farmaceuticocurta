@@ -20,6 +20,7 @@ export default function VitalSignsHistoryView({ clientId }: VitalSignsHistoryVie
   const [vitalSigns, setVitalSigns] = useState<VitalSign[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'bp' | 'glucose'>('all');
+  const [timeRange, setTimeRange] = useState<'all' | 'week' | 'month'>('all');
 
   useEffect(() => {
     loadVitalSigns();
@@ -89,15 +90,28 @@ export default function VitalSignsHistoryView({ clientId }: VitalSignsHistoryVie
     return { text: 'Alta', color: 'bg-red-200 text-red-800' };
   };
 
-  const filteredSigns = vitalSigns.filter((sign) => {
+  const applyTimeFilter = (signs: VitalSign[]) => {
+    if (timeRange === 'all') return signs;
+    const now = new Date();
+    const start = new Date(now);
+    if (timeRange === 'week') {
+      start.setDate(now.getDate() - 7);
+    } else if (timeRange === 'month') {
+      start.setDate(now.getDate() - 30);
+    }
+    return signs.filter((s) => new Date(s.measured_at) >= start);
+  };
+
+  const filteredSigns = applyTimeFilter(vitalSigns).filter((sign) => {
     if (filter === 'bp') return sign.systolic !== null && sign.diastolic !== null;
     if (filter === 'glucose') return sign.glucose !== null;
     return true;
   });
 
   const calculateAverages = () => {
-    const bpSigns = vitalSigns.filter(s => s.systolic && s.diastolic);
-    const glucoseSigns = vitalSigns.filter(s => s.glucose);
+    const dataset = applyTimeFilter(vitalSigns);
+    const bpSigns = dataset.filter(s => s.systolic && s.diastolic);
+    const glucoseSigns = dataset.filter(s => s.glucose);
 
     const avgSystolic = bpSigns.length > 0
       ? Math.round(bpSigns.reduce((sum, s) => sum + (s.systolic || 0), 0) / bpSigns.length)
@@ -130,7 +144,7 @@ export default function VitalSignsHistoryView({ clientId }: VitalSignsHistoryVie
             <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-3">
               <div className="flex items-center gap-2 mb-2">
                 <Activity className="w-4 h-4 text-blue-600" />
-                <span className="text-xs font-semibold text-gray-700">Média PA</span>
+                <span className="text-xs font-semibold text-gray-700">Média PA {timeRange === 'week' ? '(7 dias)' : timeRange === 'month' ? '(30 dias)' : ''}</span>
               </div>
               <div className="text-lg font-bold text-gray-800">
                 {averages.avgSystolic}/{averages.avgDiastolic}
@@ -142,7 +156,7 @@ export default function VitalSignsHistoryView({ clientId }: VitalSignsHistoryVie
             <div className="bg-pink-50 border-2 border-pink-200 rounded-xl p-3">
               <div className="flex items-center gap-2 mb-2">
                 <Droplet className="w-4 h-4 text-pink-600" />
-                <span className="text-xs font-semibold text-gray-700">Média Glicemia</span>
+                <span className="text-xs font-semibold text-gray-700">Média Glicemia {timeRange === 'week' ? '(7 dias)' : timeRange === 'month' ? '(30 dias)' : ''}</span>
               </div>
               <div className="text-lg font-bold text-gray-800">
                 {averages.avgGlucose} mg/dL
@@ -183,6 +197,39 @@ export default function VitalSignsHistoryView({ clientId }: VitalSignsHistoryVie
           }`}
         >
           Glicemia
+        </button>
+      </div>
+
+      <div className="flex gap-2 overflow-x-auto pb-2">
+        <button
+          onClick={() => setTimeRange('all')}
+          className={`px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition ${
+            timeRange === 'all'
+              ? 'bg-gray-800 text-white'
+              : 'bg-gray-100 text-gray-700 active:bg-gray-200'
+          }`}
+        >
+          Período: Todos
+        </button>
+        <button
+          onClick={() => setTimeRange('week')}
+          className={`px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition ${
+            timeRange === 'week'
+              ? 'bg-indigo-600 text-white'
+              : 'bg-gray-100 text-gray-700 active:bg-gray-200'
+          }`}
+        >
+          Semanal (7 dias)
+        </button>
+        <button
+          onClick={() => setTimeRange('month')}
+          className={`px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition ${
+            timeRange === 'month'
+              ? 'bg-indigo-600 text-white'
+              : 'bg-gray-100 text-gray-700 active:bg-gray-200'
+          }`}
+        >
+          Mensal (30 dias)
         </button>
       </div>
 

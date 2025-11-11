@@ -5,6 +5,8 @@ import { supabase } from '../lib/supabase';
 import { Pharmacy, Client, Medication, DoseRecord } from '../lib/types';
 import ClientListItem from '../components/ClientListItem';
 import AddClientModal from '../components/AddClientModal';
+import PharmacyOverview from '../components/PharmacyOverview';
+import PharmacyReports from '../components/PharmacyReports';
 import ClientDetailsModal from '../components/ClientDetailsModal';
 import PharmacyAddMedicationModal from '../components/PharmacyAddMedicationModal';
 
@@ -22,10 +24,12 @@ export default function PharmacyDashboard({ onLogout }: PharmacyDashboardProps) 
   const [showAddMedicationModal, setShowAddMedicationModal] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(true);
+  const [currentView, setCurrentView] = useState<'overview' | 'reports' | 'clients'>('clients');
 
   useEffect(() => {
     loadClients();
   }, [pharmacy]);
+
 
   const loadClients = async () => {
     if (!pharmacy) return;
@@ -46,6 +50,7 @@ export default function PharmacyDashboard({ onLogout }: PharmacyDashboardProps) 
     }
   };
 
+
   const handleLogout = async () => {
     await logout();
     onLogout();
@@ -57,6 +62,8 @@ export default function PharmacyDashboard({ onLogout }: PharmacyDashboardProps) 
     password: string;
     phone?: string;
     date_of_birth?: string;
+    monitor_bp?: boolean;
+    monitor_glucose?: boolean;
   }) => {
     try {
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
@@ -69,13 +76,15 @@ export default function PharmacyDashboard({ onLogout }: PharmacyDashboardProps) 
       if (authData.user) {
         const { error: insertError } = await supabase
           .from('clients')
-          .insert([{
+          .insert([{ 
             auth_id: authData.user.id,
             pharmacy_id: pharmacy.id,
             name: clientData.name,
             email: clientData.email,
             phone: clientData.phone,
             date_of_birth: clientData.date_of_birth,
+            monitor_bp: clientData.monitor_bp ?? false,
+            monitor_glucose: clientData.monitor_glucose ?? false,
           }]);
 
         if (insertError) throw insertError;
@@ -174,69 +183,123 @@ export default function PharmacyDashboard({ onLogout }: PharmacyDashboardProps) 
             </button>
           </div>
         </div>
+        {/* Navegação entre páginas do painel da farmácia */}
+        <div className="px-4 pb-3">
+          <nav className="grid grid-cols-3 gap-2">
+            <button
+              onClick={() => setCurrentView('overview')}
+              className={`flex flex-col items-center justify-center py-3 rounded-xl transition active:scale-95 ${
+                currentView === 'overview'
+                  ? 'bg-[#0F3C4C] text-white shadow-lg'
+                  : 'bg-white text-gray-600 border-2 border-gray-200'
+              }`}
+            >
+              <span className="text-xs font-semibold">Visão Geral</span>
+            </button>
+            <button
+              onClick={() => setCurrentView('reports')}
+              className={`flex flex-col items-center justify-center py-3 rounded-xl transition active:scale-95 ${
+                currentView === 'reports'
+                  ? 'bg-[#0F3C4C] text-white shadow-lg'
+                  : 'bg-white text-gray-600 border-2 border-gray-200'
+              }`}
+            >
+              <span className="text-xs font-semibold">Relatórios</span>
+            </button>
+            <button
+              onClick={() => setCurrentView('clients')}
+              className={`flex flex-col items-center justify-center py-3 rounded-xl transition active:scale-95 ${
+                currentView === 'clients'
+                  ? 'bg-[#0F3C4C] text-white shadow-lg'
+                  : 'bg-white text-gray-600 border-2 border-gray-200'
+              }`}
+            >
+              <span className="text-xs font-semibold">Clientes</span>
+            </button>
+          </nav>
+        </div>
       </header>
 
       <main className="px-4 py-4">
-        <div className="bg-gradient-to-br from-[#0F3C4C] to-[#1a5768] rounded-2xl shadow-lg p-5 text-white mb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold mb-1">Bem-vindo!</h2>
-              <p className="text-white/90 text-sm">
-                Gerencie seus clientes e acompanhe tratamentos
-              </p>
+        {currentView === 'overview' && (
+          <>
+            <div className="bg-gradient-to-br from-[#0F3C4C] to-[#1a5768] rounded-2xl shadow-lg p-5 text-white mb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold mb-1">Bem-vindo!</h2>
+                  <p className="text-white/90 text-sm">
+                    Gerencie seus clientes e acompanhe tratamentos
+                  </p>
+                </div>
+                <div className="bg-white/20 p-3 rounded-xl text-center min-w-[70px]">
+                  <Users className="w-7 h-7 mx-auto mb-1" />
+                  <div className="text-2xl font-bold">{clients.length}</div>
+                  <div className="text-xs text-white/90">Clientes</div>
+                </div>
+              </div>
             </div>
-            <div className="bg-white/20 p-3 rounded-xl text-center min-w-[70px]">
-              <Users className="w-7 h-7 mx-auto mb-1" />
-              <div className="text-2xl font-bold">{clients.length}</div>
-              <div className="text-xs text-white/90">Clientes</div>
-            </div>
-          </div>
-        </div>
 
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-gray-800">
-            Clientes
-          </h2>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 bg-[#0F3C4C] text-white px-4 py-2.5 rounded-xl active:bg-[#0d3340] transition shadow-md active:scale-95"
-          >
-            <UserPlus className="w-4 h-4" />
-            <span className="text-sm font-medium">Adicionar</span>
-          </button>
-        </div>
-
-        {clients.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-md p-8 text-center">
-            <div className="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
-              <Users className="w-8 h-8 text-gray-400" />
+            <div className="mb-4">
+              <PharmacyOverview pharmacyId={pharmacy.id} />
             </div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">
-              Nenhum cliente cadastrado
-            </h3>
-            <p className="text-sm text-gray-600 mb-5">
-              Comece adicionando clientes para gerenciar tratamentos
-            </p>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="inline-flex items-center gap-2 bg-[#0F3C4C] text-white px-5 py-3 rounded-xl active:bg-[#0d3340] transition active:scale-95"
-            >
-              <UserPlus className="w-5 h-5" />
-              <span className="font-medium">Adicionar Primeiro Cliente</span>
-            </button>
+          </>
+        )}
+
+        {currentView === 'reports' && (
+          <div className="mb-4">
+            <PharmacyReports pharmacyId={pharmacy.id} />
           </div>
-        ) : (
-          <div className="space-y-3">
-            {clients.map((client) => (
-              <ClientListItem
-                key={client.id}
-                client={client}
-                pharmacyId={pharmacy.id}
-                onUpdate={loadClients}
-                onViewDetails={handleViewDetails}
-              />
-            ))}
-          </div>
+        )}
+
+        {currentView === 'clients' && (
+          <>
+
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-800">
+                Clientes
+              </h2>
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="flex items-center gap-2 bg-[#0F3C4C] text-white px-4 py-2.5 rounded-xl active:bg-[#0d3340] transition shadow-md active:scale-95"
+              >
+                <UserPlus className="w-4 h-4" />
+                <span className="text-sm font-medium">Adicionar</span>
+              </button>
+            </div>
+
+            {clients.length === 0 ? (
+              <div className="bg-white rounded-2xl shadow-md p-8 text-center">
+                <div className="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Users className="w-8 h-8 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                  Nenhum cliente cadastrado
+                </h3>
+                <p className="text-sm text-gray-600 mb-5">
+                  Comece adicionando clientes para gerenciar tratamentos
+                </p>
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="inline-flex items-center gap-2 bg-[#0F3C4C] text-white px-5 py-3 rounded-xl active:bg-[#0d3340] transition active:scale-95"
+                >
+                  <UserPlus className="w-5 h-5" />
+                  <span className="font-medium">Adicionar Primeiro Cliente</span>
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {clients.map((client) => (
+                  <ClientListItem
+                    key={client.id}
+                    client={client}
+                    pharmacyId={pharmacy.id}
+                    onUpdate={loadClients}
+                    onViewDetails={handleViewDetails}
+                  />
+                ))}
+              </div>
+            )}
+          </>
         )}
       </main>
 

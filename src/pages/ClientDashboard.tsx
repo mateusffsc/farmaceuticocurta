@@ -25,9 +25,12 @@ export default function ClientDashboard({ onLogout }: ClientDashboardProps) {
   const [currentView, setCurrentView] = useState<'home' | 'calendar' | 'progress' | 'reports' | 'vitals'>('home');
   const [showAddMedication, setShowAddMedication] = useState(false);
   const [showAddVitalSigns, setShowAddVitalSigns] = useState(false);
+  const [monitorBp, setMonitorBp] = useState<boolean>(false);
+  const [monitorGlucose, setMonitorGlucose] = useState<boolean>(false);
 
   useEffect(() => {
     loadData();
+    loadMonitorFlags();
     updateMissedDoses();
 
     // Subscribe to real-time changes on dose_records for this client
@@ -72,6 +75,39 @@ export default function ClientDashboard({ onLogout }: ClientDashboardProps) {
       } catch {}
     };
   }, [client]);
+
+  const loadMonitorFlags = async () => {
+    if (!client) return;
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('monitor_bp, monitor_glucose')
+        .eq('id', client.id)
+        .single();
+      if (!error && data) {
+        setMonitorBp(!!data.monitor_bp);
+        setMonitorGlucose(!!data.monitor_glucose);
+      }
+    } catch (err) {
+      console.error('Erro ao carregar flags de monitoramento:', err);
+    }
+  };
+
+  const saveMonitorFlag = async (field: 'monitor_bp' | 'monitor_glucose', value: boolean) => {
+    if (!client) return;
+    try {
+      const { error } = await supabase
+        .from('clients')
+        .update({ [field]: value })
+        .eq('id', client.id);
+      if (error) throw error;
+    } catch (err) {
+      console.error('Erro ao salvar flag de monitoramento:', err);
+      // Revert UI if error
+      if (field === 'monitor_bp') setMonitorBp((prev) => !value ? prev : prev);
+      if (field === 'monitor_glucose') setMonitorGlucose((prev) => !value ? prev : prev);
+    }
+  };
 
   const loadData = async () => {
     if (!client) return;
@@ -281,6 +317,51 @@ export default function ClientDashboard({ onLogout }: ClientDashboardProps) {
                 <Plus className="w-4 h-4" />
                 Registrar
               </button>
+            </div>
+            <div className="grid grid-cols-1 gap-3 mb-4">
+              <div className="flex items-center justify-between bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-sm">
+                <div>
+                  <p className="text-sm font-medium text-gray-800">Monitorar Pressão Arterial</p>
+                  <p className="text-xs text-gray-600">Habilita registros e médias de PA</p>
+                </div>
+                <label className="inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={monitorBp}
+                    onChange={(e) => {
+                      const val = e.target.checked;
+                      setMonitorBp(val);
+                      saveMonitorFlag('monitor_bp', val);
+                    }}
+                  />
+                  <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-[#0F3C4C] transition relative">
+                    <span className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition peer-checked:translate-x-5" />
+                  </div>
+                </label>
+              </div>
+
+              <div className="flex items-center justify-between bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-sm">
+                <div>
+                  <p className="text-sm font-medium text-gray-800">Monitorar Glicemia</p>
+                  <p className="text-xs text-gray-600">Habilita registros e médias de glicose</p>
+                </div>
+                <label className="inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={monitorGlucose}
+                    onChange={(e) => {
+                      const val = e.target.checked;
+                      setMonitorGlucose(val);
+                      saveMonitorFlag('monitor_glucose', val);
+                    }}
+                  />
+                  <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-[#0F3C4C] transition relative">
+                    <span className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition peer-checked:translate-x-5" />
+                  </div>
+                </label>
+              </div>
             </div>
             <VitalSignsHistoryView clientId={client.id} />
           </div>
