@@ -19,6 +19,27 @@ export default function DoseDetailsModal({ dose, medication, onClose, onMedicati
 
   useEffect(() => {
     loadDoseDetails();
+
+    // Real-time: escuta mudanças em adverse_events para esta dose ou cliente
+    const channel = supabase
+      .channel(`dose-details-${dose.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'adverse_events',
+          filter: `client_id=eq.${dose.client_id}`,
+        },
+        () => {
+          loadDoseDetails();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      try { supabase.removeChannel(channel); } catch {}
+    };
   }, [dose.id]);
 
   const loadDoseDetails = async () => {
@@ -36,7 +57,49 @@ export default function DoseDetailsModal({ dose, medication, onClose, onMedicati
           .maybeSingle(),
       ]);
 
-      if (eventsResult.data) setAdverseEvents(eventsResult.data);
+      let events = eventsResult.data || [];
+
+      // Fallback: se nada vinculado à dose, buscar por medicamento no dia da dose
+      if (events.length === 0) {
+        const scheduled = new Date(dose.scheduled_time);
+        const start = new Date(scheduled);
+        const end = new Date(scheduled);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(23, 59, 59, 999);
+
+        // 1) Fallback por medicamento no dia
+        if (medication?.id) {
+          const { data: fallbackByMed } = await supabase
+            .from('adverse_events')
+            .select('*')
+            .eq('client_id', dose.client_id)
+            .eq('medication_id', medication.id)
+            .gte('occurred_at', start.toISOString())
+            .lte('occurred_at', end.toISOString())
+            .order('occurred_at', { ascending: false });
+          events = fallbackByMed || [];
+        }
+
+        // 2) Se ainda vazio, fallback por proximidade (±12h) ignorando medicamento
+        if ((events?.length || 0) === 0) {
+          const minus12h = new Date(scheduled);
+          minus12h.setHours(minus12h.getHours() - 12);
+          const plus12h = new Date(scheduled);
+          plus12h.setHours(plus12h.getHours() + 12);
+
+          const { data: fallbackByProximity } = await supabase
+            .from('adverse_events')
+            .select('*')
+            .eq('client_id', dose.client_id)
+            .gte('occurred_at', minus12h.toISOString())
+            .lte('occurred_at', plus12h.toISOString())
+            .order('occurred_at', { ascending: false });
+
+          events = fallbackByProximity || [];
+        }
+      }
+
+      setAdverseEvents(events);
       if (correctionResult.data) setCorrection(correctionResult.data);
     } catch (error) {
       console.error('Error loading dose details:', error);

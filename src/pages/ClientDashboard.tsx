@@ -29,6 +29,48 @@ export default function ClientDashboard({ onLogout }: ClientDashboardProps) {
   useEffect(() => {
     loadData();
     updateMissedDoses();
+
+    // Subscribe to real-time changes on dose_records for this client
+    const channel = supabase
+      .channel(`dose-records-client-${client?.id || 'unknown'}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'dose_records',
+          filter: client ? `client_id=eq.${client.id}` : undefined,
+        },
+        () => {
+          // Refetch to reflect external changes (e.g., SQL inserts/updates)
+          loadData();
+        }
+      )
+      .subscribe();
+
+    // Also subscribe to adverse_events changes for this client
+    const eventsChannel = supabase
+      .channel(`adverse-events-client-${client?.id || 'unknown'}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'adverse_events',
+          filter: client ? `client_id=eq.${client.id}` : undefined,
+        },
+        () => {
+          loadData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      try {
+        supabase.removeChannel(channel);
+        supabase.removeChannel(eventsChannel);
+      } catch {}
+    };
   }, [client]);
 
   const loadData = async () => {
