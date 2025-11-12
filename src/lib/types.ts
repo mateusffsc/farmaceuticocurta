@@ -13,8 +13,8 @@ export type Client = {
   pharmacy_id: string;
   name: string;
   email: string;
-  password: string;
   phone?: string;
+  cpf?: string;
   date_of_birth?: string;
   monitor_bp?: boolean;
   monitor_glucose?: boolean;
@@ -74,3 +74,14 @@ export type DoseCorrection = {
 };
 
 export type UserRole = 'pharmacy' | 'client';
+
+export type PharmacyAd = {
+  id: string;
+  pharmacy_id: string;
+  image_url: string;
+  whatsapp_phone?: string;
+  whatsapp_message?: string;
+  is_active?: boolean;
+  display_order?: number;
+  created_at: string;
+};

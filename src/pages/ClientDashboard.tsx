@@ -6,6 +6,7 @@ import { Client, Medication, DoseRecord } from '../lib/types';
 import MedicationCard from '../components/MedicationCard';
 import CareCalendar from '../components/CareCalendar';
 import AdherenceCard from '../components/AdherenceCard';
+import AdsBanner from '../components/AdsBanner';
 import ProgressView from '../components/ProgressView';
 import AdverseEventsView from '../components/AdverseEventsView';
 import ClientAddMedicationModal from '../components/ClientAddMedicationModal';
@@ -33,47 +34,8 @@ export default function ClientDashboard({ onLogout }: ClientDashboardProps) {
     loadMonitorFlags();
     updateMissedDoses();
 
-    // Subscribe to real-time changes on dose_records for this client
-    const channel = supabase
-      .channel(`dose-records-client-${client?.id || 'unknown'}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'dose_records',
-          filter: client ? `client_id=eq.${client.id}` : undefined,
-        },
-        () => {
-          // Refetch to reflect external changes (e.g., SQL inserts/updates)
-          loadData();
-        }
-      )
-      .subscribe();
-
-    // Also subscribe to adverse_events changes for this client
-    const eventsChannel = supabase
-      .channel(`adverse-events-client-${client?.id || 'unknown'}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'adverse_events',
-          filter: client ? `client_id=eq.${client.id}` : undefined,
-        },
-        () => {
-          loadData();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      try {
-        supabase.removeChannel(channel);
-        supabase.removeChannel(eventsChannel);
-      } catch {}
-    };
+    // Sem Supabase Auth, evitamos subscriptions que dependem de RLS
+    return () => {};
   }, [client]);
 
   const loadMonitorFlags = async () => {
@@ -113,21 +75,17 @@ export default function ClientDashboard({ onLogout }: ClientDashboardProps) {
     if (!client) return;
 
     try {
-      const { data: medsData } = await supabase
-        .from('medications')
-        .select('*')
-        .eq('client_id', client.id)
-        .order('created_at', { ascending: false });
+      const { data: medsData, error: medsError } = await supabase.rpc('get_client_medications', {
+        client_id: client.id,
+      });
+      if (medsError) throw medsError;
+      if (medsData) setMedications(medsData as any);
 
-      if (medsData) setMedications(medsData);
-
-      const { data: dosesData } = await supabase
-        .from('dose_records')
-        .select('*')
-        .eq('client_id', client.id)
-        .order('scheduled_time', { ascending: true });
-
-      if (dosesData) setDoseRecords(dosesData);
+      const { data: dosesData, error: dosesError } = await supabase.rpc('get_client_dose_records', {
+        client_id: client.id,
+      });
+      if (dosesError) throw dosesError;
+      if (dosesData) setDoseRecords(dosesData as any);
     } catch (error) {
       console.error('Error loading data:', error);
     }
@@ -137,18 +95,9 @@ export default function ClientDashboard({ onLogout }: ClientDashboardProps) {
     if (!client) return;
 
     try {
-      const now = new Date();
-      const yesterday = new Date(now);
-      yesterday.setDate(yesterday.getDate() - 1);
-      yesterday.setHours(23, 59, 59, 999);
-
-      const { error } = await supabase
-        .from('dose_records')
-        .update({ status: 'skipped' })
-        .eq('client_id', client.id)
-        .eq('status', 'pending')
-        .lt('scheduled_time', yesterday.toISOString());
-
+      const { error } = await supabase.rpc('update_missed_doses_for_client', {
+        client_id: client.id,
+      });
       if (error) {
         console.error('Error updating missed doses:', error);
       }
@@ -164,14 +113,11 @@ export default function ClientDashboard({ onLogout }: ClientDashboardProps) {
 
   const handleDoseAction = async (doseId: string, action: 'taken' | 'skipped') => {
     try {
-      const { error } = await supabase
-        .from('dose_records')
-        .update({
-          status: action,
-          actual_time: action === 'taken' ? new Date().toISOString() : null,
-        })
-        .eq('id', doseId);
-
+      const { error } = await supabase.rpc('update_client_dose_status', {
+        client_id: client!.id,
+        dose_id: doseId,
+        new_status: action,
+      });
       if (error) throw error;
       await loadData();
     } catch (error) {
@@ -276,6 +222,9 @@ export default function ClientDashboard({ onLogout }: ClientDashboardProps) {
       </header>
 
       <main className="px-4 py-4">
+        {currentView === 'home' && client && (
+          <AdsBanner pharmacyId={client.pharmacy_id} />
+        )}
         {currentView === 'home' && (
           <div className="mb-4">
             <AdherenceCard doseRecords={doseRecords} />

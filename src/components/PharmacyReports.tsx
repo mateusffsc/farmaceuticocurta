@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import PharmacyAdsManager from './PharmacyAdsManager';
 import { BarChart2, Users, CheckCircle, AlertCircle } from 'lucide-react';
 
 type Client = { id: string; name: string; phone?: string };
@@ -188,6 +189,9 @@ export default function PharmacyReports({ pharmacyId }: PharmacyReportsProps) {
         <p className="text-sm text-red-600">{error}</p>
       ) : (
         <div className="space-y-4">
+          {/* Anúncios */}
+          <PharmacyAdsManager pharmacyId={pharmacyId} />
+
           {/* KPIs */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
