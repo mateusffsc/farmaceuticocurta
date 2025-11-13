@@ -125,6 +125,31 @@ export default function ClientDashboard({ onLogout }: ClientDashboardProps) {
     }
   };
 
+  const handleDeleteMedication = async (medicationId: string) => {
+    if (!client) return;
+    
+    try {
+      const { data: success, error } = await supabase.rpc('delete_client_medication', {
+        p_medication_id: medicationId,
+        p_client_id: client.id,
+      });
+      
+      if (error) {
+        console.error('Error deleting medication:', error);
+        alert('Erro ao deletar medicamento: ' + error.message);
+        return;
+      }
+      
+      if (success) {
+        console.log('✅ Medicamento deletado com sucesso');
+        await loadData(); // Recarregar lista de medicamentos
+      }
+    } catch (error: any) {
+      console.error('Error deleting medication:', error);
+      alert('Erro ao deletar medicamento: ' + error.message);
+    }
+  };
+
   const getTodayDoses = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -365,6 +390,7 @@ export default function ClientDashboard({ onLogout }: ClientDashboardProps) {
                   pharmacyId={client.pharmacy_id}
                   onDoseAction={handleDoseAction}
                   onIssueReported={loadData}
+                  onDelete={handleDeleteMedication}
                 />
               );
             })}

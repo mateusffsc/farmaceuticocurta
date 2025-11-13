@@ -9,6 +9,7 @@ import PharmacyOverview from '../components/PharmacyOverview';
 import PharmacyReports from '../components/PharmacyReports';
 import ClientDetailsModal from '../components/ClientDetailsModal';
 import PharmacyAddMedicationModal from '../components/PharmacyAddMedicationModal';
+import { getAuthEmail } from '../lib/authUtils';
 
 type PharmacyDashboardProps = {
   onLogout: () => void;
@@ -57,46 +58,77 @@ export default function PharmacyDashboard({ onLogout }: PharmacyDashboardProps) 
   };
 
   const handleAddClient = async (clientData: {
-    name: string;
-    email: string;
-    password: string;
-    phone?: string;
-    date_of_birth?: string;
-    monitor_bp?: boolean;
-    monitor_glucose?: boolean;
-  }) => {
-    try {
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email: clientData.email,
-        password: clientData.password,
-      });
+  name: string;
+  email?: string;
+  password: string;
+  phone: string;
+  date_of_birth?: string;
+  monitor_bp?: boolean;
+  monitor_glucose?: boolean;
+}) => {
+  try {
+    console.log('📝 Iniciando cadastro de cliente:', { 
+      name: clientData.name, 
+      phone: clientData.phone, 
+      hasEmail: !!clientData.email 
+    });
+    // Determinar o email para autenticação (telefone ou email real)
+    const authEmail = getAuthEmail(clientData.phone);
+    console.log('📧 Email gerado para auth:', authEmail);
+    
+    const { data: authData, error: signUpError } = await supabase.auth.signUp({
+      email: authEmail,
+      password: clientData.password,
+    });
 
-      if (signUpError) throw signUpError;
-
-      if (authData.user) {
-        const { error: insertError } = await supabase
-          .from('clients')
-          .insert([{ 
-            auth_id: authData.user.id,
-            pharmacy_id: pharmacy.id,
-            name: clientData.name,
-            email: clientData.email,
-            phone: clientData.phone,
-            date_of_birth: clientData.date_of_birth,
-            monitor_bp: clientData.monitor_bp ?? false,
-            monitor_glucose: clientData.monitor_glucose ?? false,
-          }]);
-
-        if (insertError) throw insertError;
-
-        await loadClients();
-        setShowAddModal(false);
-      }
-    } catch (error: any) {
-      console.error('Error adding client:', error);
-      alert(error.message || 'Erro ao adicionar cliente');
+    if (signUpError) {
+      console.error('❌ Erro no cadastro Supabase:', signUpError);
+      throw signUpError;
     }
-  };
+
+    if (authData.user) {
+      console.log('✅ Usuário criado no Supabase, ID:', authData.user.id);
+      // Verificar se já existe cliente com esse telefone
+      if (clientData.phone) {
+        const { data: existing } = await supabase
+          .from('clients')
+          .select('id')
+          .eq('phone', clientData.phone)
+          .maybeSingle();
+        
+        if (existing) {
+          console.error('❌ Telefone já existe:', clientData.phone);
+          throw new Error('Já existe um cliente cadastrado com este telefone');
+        }
+      }
+      
+      const { error: insertError } = await supabase
+        .from('clients')
+        .insert([{ 
+          auth_id: authData.user.id,
+          pharmacy_id: pharmacy.id,
+          name: clientData.name,
+          email: clientData.email || null,
+          phone: clientData.phone,
+          date_of_birth: clientData.date_of_birth,
+          monitor_bp: clientData.monitor_bp ?? false,
+          monitor_glucose: clientData.monitor_glucose ?? false,
+        }]);
+
+      if (insertError) {
+        console.error('❌ Erro ao inserir cliente:', insertError);
+        throw insertError;
+      }
+
+      await loadClients();
+      setShowAddModal(false);
+      console.log('✅ Cliente cadastrado com sucesso!');
+    }
+  } catch (error: any) {
+    console.error('Error adding client:', error);
+    alert(error.message || 'Erro ao adicionar cliente');
+  }
+};
 
   const handleViewDetails = (client: Client) => {
     setSelectedClient(client);

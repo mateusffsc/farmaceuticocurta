@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Clock, Check, X, AlertCircle, Info } from 'lucide-react';
+import { Clock, Check, X, AlertCircle, Info, Trash2 } from 'lucide-react';
 import { Medication, DoseRecord } from '../lib/types';
 import ReportIssueModal from './ReportIssueModal';
 import DoseDetailsModal from './DoseDetailsModal';
@@ -11,12 +11,14 @@ type MedicationCardProps = {
   pharmacyId: string;
   onDoseAction: (doseId: string, action: 'taken' | 'skipped') => void;
   onIssueReported: () => void;
+  onDelete?: (medicationId: string) => void;
 };
 
-export default function MedicationCard({ medication, doses, clientId, pharmacyId, onDoseAction, onIssueReported }: MedicationCardProps) {
+export default function MedicationCard({ medication, doses, clientId, pharmacyId, onDoseAction, onIssueReported, onDelete }: MedicationCardProps) {
   const [showReportModal, setShowReportModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedDose, setSelectedDose] = useState<DoseRecord | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const getStatusColor = (status: string, hasIssues?: boolean) => {
     if (hasIssues) return 'bg-orange-100 text-orange-700 border-orange-300';
@@ -70,6 +72,13 @@ export default function MedicationCard({ medication, doses, clientId, pharmacyId
     setShowDetailsModal(true);
   };
 
+  const handleDelete = () => {
+    if (onDelete) {
+      onDelete(medication.id);
+      setShowDeleteConfirm(false);
+    }
+  };
+
   return (
     <>
       <div className="bg-white rounded-2xl shadow-md active:shadow-lg transition p-4">
@@ -81,16 +90,30 @@ export default function MedicationCard({ medication, doses, clientId, pharmacyId
               </h3>
               <p className="text-gray-600 text-sm">{medication.dosage}</p>
             </div>
-            {typeof medication.remaining_doses === 'number' && (
-              <div className="text-right">
-                <div className="inline-flex items-center gap-2 bg-gray-100 text-gray-800 px-2.5 py-1 rounded-lg text-xs font-semibold">
-                  Restantes
-                  <span className="bg-[#0F3C4C] text-white px-2 py-0.5 rounded-md text-xs">
-                    {medication.remaining_doses}
-                  </span>
+            <div className="flex items-center gap-2">
+              {typeof medication.remaining_doses === 'number' && (
+                <div className="text-right">
+                  <div className="inline-flex items-center gap-2 bg-gray-100 text-gray-800 px-2.5 py-1 rounded-lg text-xs font-semibold">
+                    Restantes
+                    <span className="bg-[#0F3C4C] text-white px-2 py-0.5 rounded-md text-xs">
+                      {medication.remaining_doses}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+              {onDelete && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowDeleteConfirm(true);
+                  }}
+                  className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  title="Deletar medicamento"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -214,6 +237,39 @@ export default function MedicationCard({ medication, doses, clientId, pharmacyId
           }}
           onMedicationUpdated={onIssueReported}
         />
+      )}
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
+            <div className="text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                <Trash2 className="h-6 w-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">
+                Deletar Medicamento
+              </h3>
+              <p className="text-sm text-gray-600 mb-6">
+                Tem certeza que deseja deletar <strong>{medication.name}</strong>? 
+                Esta ação também removerá todas as doses e registros relacionados.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition text-sm font-semibold"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition text-sm font-semibold"
+                >
+                  Deletar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

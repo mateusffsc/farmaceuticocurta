@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { X, User, Mail, Lock, Phone, Calendar } from 'lucide-react';
+import { isValidPhone } from '../lib/authUtils';
 
 type AddClientModalProps = {
   onClose: () => void;
   onAdd: (client: {
     name: string;
-    email: string;
+    email?: string;
     password: string;
-    phone?: string;
+    phone: string;
     date_of_birth?: string;
     monitor_bp?: boolean;
     monitor_glucose?: boolean;
@@ -34,9 +35,15 @@ export default function AddClientModal({ onClose, onAdd }: AddClientModalProps) 
       newErrors.name = 'Nome é obrigatório';
     }
 
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email é obrigatório';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    // Telefone agora é obrigatório
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'Telefone é obrigatório';
+    } else if (!isValidPhone(formData.phone)) {
+      newErrors.phone = 'Telefone inválido. Use formato: (11) 99999-9999';
+    }
+
+    // Email é opcional, mas se preenchido deve ser válido
+    if (formData.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Email inválido';
     }
 
@@ -62,9 +69,9 @@ export default function AddClientModal({ onClose, onAdd }: AddClientModalProps) 
     try {
       await onAdd({
         name: formData.name.trim(),
-        email: formData.email.trim(),
+        email: formData.email.trim() || undefined,
         password: formData.password,
-        phone: formData.phone.trim() || undefined,
+        phone: formData.phone.trim(),
         date_of_birth: formData.date_of_birth || undefined,
         monitor_bp: formData.monitor_bp,
         monitor_glucose: formData.monitor_glucose,
@@ -113,7 +120,26 @@ export default function AddClientModal({ onClose, onAdd }: AddClientModalProps) 
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Email *
+              Telefone *
+            </label>
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                placeholder="(11) 99999-9999"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F3C4C] focus:border-transparent outline-none"
+              />
+            </div>
+            {errors.phone && (
+              <p className="text-red-600 text-sm mt-1">{errors.phone}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Email (opcional)
             </label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -121,7 +147,7 @@ export default function AddClientModal({ onClose, onAdd }: AddClientModalProps) 
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="cliente@email.com"
+                placeholder="cliente@email.com (opcional)"
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F3C4C] focus:border-transparent outline-none"
               />
             </div>
@@ -147,22 +173,6 @@ export default function AddClientModal({ onClose, onAdd }: AddClientModalProps) 
             {errors.password && (
               <p className="text-red-600 text-sm mt-1">{errors.password}</p>
             )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Telefone (opcional)
-            </label>
-            <div className="relative">
-              <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                placeholder="(11) 99999-9999"
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F3C4C] focus:border-transparent outline-none"
-              />
-            </div>
           </div>
 
           <div>
@@ -226,7 +236,7 @@ export default function AddClientModal({ onClose, onAdd }: AddClientModalProps) 
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
             <p className="font-medium mb-1">Informações de Acesso</p>
-            <p>O cliente usará o email e senha cadastrados para fazer login no sistema.</p>
+            <p>O cliente usará o telefone e senha cadastrados para fazer login. Se informar email, também poderá usar o email.</p>
           </div>
 
           <div className="flex gap-3 pt-4">

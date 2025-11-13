@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Building2, Mail, Lock } from 'lucide-react';
+import { Building2, Mail, Lock, Phone } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
+import { isValidPhone } from '../lib/authUtils';
 
 type PharmacyLoginProps = {
   onLogin: () => void;
@@ -11,7 +12,7 @@ export default function PharmacyLogin({ onLogin, onSwitchToClient }: PharmacyLog
   const [isRegistering, setIsRegistering] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
-    email: '',
+    identifier: '',
     password: '',
     phone: '',
     address: '',
@@ -28,9 +29,9 @@ export default function PharmacyLogin({ onLogin, onSwitchToClient }: PharmacyLog
 
     try {
       if (isRegistering) {
-        await registerPharmacy(formData);
+        await registerPharmacy({ ...formData, identifier: formData.identifier });
       } else {
-        await loginPharmacy(formData.email, formData.password);
+        await loginPharmacy(formData.identifier, formData.password);
       }
       onLogin();
     } catch (err: any) {
@@ -77,15 +78,15 @@ export default function PharmacyLogin({ onLogin, onSwitchToClient }: PharmacyLog
 
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Email
+              Email ou Telefone
             </label>
             <div className="relative">
-              <Mail className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              {isValidPhone(formData.identifier) ? <Phone className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" /> : <Mail className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />}
               <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="seu@email.com"
+                type="text"
+                value={formData.identifier}
+                onChange={(e) => setFormData({ ...formData, identifier: e.target.value })}
+                placeholder="seu@email.com ou (11) 99999-9999"
                 className="w-full pl-11 pr-4 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0F3C4C] focus:border-[#0F3C4C] outline-none text-base"
                 required
               />
@@ -117,7 +118,7 @@ export default function PharmacyLogin({ onLogin, onSwitchToClient }: PharmacyLog
                   Telefone (opcional)
                 </label>
                 <input
-                  type="tel"
+                  type="tel" 
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   placeholder="(11) 99999-9999"

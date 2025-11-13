@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { User, Mail, Lock } from 'lucide-react';
+import { User, Mail, Lock, Phone } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
+import { isValidPhone } from '../lib/authUtils';
 
 type ClientLoginProps = {
   onLogin: () => void;
@@ -9,7 +10,7 @@ type ClientLoginProps = {
 
 export default function ClientLogin({ onLogin, onSwitchToPharmacy }: ClientLoginProps) {
   const [formData, setFormData] = useState({
-    email: '',
+    identifier: '',
     password: '',
   });
   const [loading, setLoading] = useState(false);
@@ -23,7 +24,7 @@ export default function ClientLogin({ onLogin, onSwitchToPharmacy }: ClientLogin
     setError('');
 
     try {
-      await loginClient(formData.email, formData.password);
+      await loginClient(formData.identifier, formData.password);
       onLogin();
     } catch (err: any) {
       setError(err.message || 'Erro ao fazer login. Tente novamente.');
@@ -51,15 +52,15 @@ export default function ClientLogin({ onLogin, onSwitchToPharmacy }: ClientLogin
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Email
+              Email ou Telefone
             </label>
             <div className="relative">
-              <Mail className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              {isValidPhone(formData.identifier) ? <Phone className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" /> : <Mail className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />}
               <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="seu@email.com"
+                type="text"
+                value={formData.identifier}
+                onChange={(e) => setFormData({ ...formData, identifier: e.target.value })}
+                placeholder="seu@email.com ou (11) 99999-9999"
                 className="w-full pl-11 pr-4 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0F3C4C] focus:border-[#0F3C4C] outline-none text-base"
                 required
               />
@@ -79,6 +80,7 @@ export default function ClientLogin({ onLogin, onSwitchToPharmacy }: ClientLogin
                 placeholder="••••••••"
                 className="w-full pl-11 pr-4 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0F3C4C] focus:border-[#0F3C4C] outline-none text-base"
                 required
+                minLength={6}
               />
             </div>
           </div>
@@ -94,23 +96,17 @@ export default function ClientLogin({ onLogin, onSwitchToPharmacy }: ClientLogin
             disabled={loading}
             className="w-full bg-[#0F3C4C] text-white py-4 rounded-xl font-bold text-base active:bg-[#0d3340] transition disabled:opacity-50 active:scale-95 shadow-md"
           >
-            {loading ? 'Entrando...' : 'Entrar'}
+            {loading ? 'Processando...' : 'Entrar'}
           </button>
         </form>
 
         <div className="mt-5 text-center">
-          <p className="text-xs text-gray-600 mb-3">
-            Suas credenciais são fornecidas pela sua farmácia
-          </p>
-
-          <div className="border-t border-gray-200 pt-3">
-            <button
-              onClick={onSwitchToPharmacy}
-              className="text-gray-600 active:text-[#0F3C4C] text-sm font-medium"
-            >
-              Acessar como Farmácia
-            </button>
-          </div>
+          <button
+            onClick={onSwitchToPharmacy}
+            className="text-gray-600 active:text-[#0F3C4C] text-sm font-medium"
+          >
+            Acessar como Farmácia
+          </button>
         </div>
       </div>
     </div>
