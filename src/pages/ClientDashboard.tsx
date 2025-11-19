@@ -38,6 +38,34 @@ export default function ClientDashboard({ onLogout }: ClientDashboardProps) {
     return () => {};
   }, [client]);
 
+  useEffect(() => {
+    if (!client) return;
+
+    const channel = supabase.channel(`client-realtime-${client.id}`);
+
+    channel.on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'medications', filter: `client_id=eq.${client.id}` },
+      () => {
+        loadData();
+      }
+    );
+
+    channel.on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'dose_records', filter: `client_id=eq.${client.id}` },
+      () => {
+        loadData();
+      }
+    );
+
+    channel.subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [client]);
+
   const loadMonitorFlags = async () => {
     if (!client) return;
     try {

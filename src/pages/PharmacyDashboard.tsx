@@ -31,6 +31,25 @@ export default function PharmacyDashboard({ onLogout }: PharmacyDashboardProps) 
     loadClients();
   }, [pharmacy]);
 
+  useEffect(() => {
+    if (!pharmacy) return;
+
+    const channel = supabase.channel(`pharmacy-clients-${pharmacy.id}`);
+    channel.on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'clients', filter: `pharmacy_id=eq.${pharmacy.id}` },
+      () => {
+        loadClients();
+      }
+    );
+
+    channel.subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [pharmacy]);
+
 
   const loadClients = async () => {
     if (!pharmacy) return;

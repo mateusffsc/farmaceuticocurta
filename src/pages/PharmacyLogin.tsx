@@ -157,15 +157,6 @@ export default function PharmacyLogin({ onLogin, onSwitchToClient }: PharmacyLog
         </form>
 
         <div className="mt-5 text-center space-y-3">
-          <button
-            onClick={() => setIsRegistering(!isRegistering)}
-            className="text-[#0F3C4C] active:underline text-sm font-medium"
-          >
-            {isRegistering
-              ? 'Já tem cadastro? Faça login'
-              : 'Ainda não tem cadastro? Registre-se'}
-          </button>
-
           <div className="border-t border-gray-200 pt-3">
             <button
               onClick={onSwitchToClient}
