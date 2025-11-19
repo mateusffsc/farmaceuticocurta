@@ -7,7 +7,12 @@ import ClientDashboard from './pages/ClientDashboard';
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
-  const [loginMode, setLoginMode] = useState<'pharmacy' | 'client'>('pharmacy');
+  const [loginMode, setLoginMode] = useState<'pharmacy' | 'client'>(() => {
+    if (typeof window !== 'undefined') {
+      return window.location.pathname === '/farmacia' ? 'pharmacy' : 'client';
+    }
+    return 'client';
+  });
   const { isAuthenticated, userRole, checkAuth } = useAuthStore();
 
   useEffect(() => {
@@ -31,14 +36,26 @@ function App() {
       return (
         <PharmacyLogin
           onLogin={() => window.location.reload()}
-          onSwitchToClient={() => setLoginMode('client')}
+          onSwitchToClient={() => {
+            if (typeof window !== 'undefined') {
+              window.location.href = '/';
+            } else {
+              setLoginMode('client');
+            }
+          }}
         />
       );
     } else {
       return (
         <ClientLogin
           onLogin={() => window.location.reload()}
-          onSwitchToPharmacy={() => setLoginMode('pharmacy')}
+          onSwitchToPharmacy={() => {
+            if (typeof window !== 'undefined') {
+              window.location.href = '/farmacia';
+            } else {
+              setLoginMode('pharmacy');
+            }
+          }}
         />
       );
     }
