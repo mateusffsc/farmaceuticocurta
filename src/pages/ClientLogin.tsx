@@ -105,7 +105,6 @@ export default function ClientLogin({ onLogin, onSwitchToPharmacy }: ClientLogin
             onClick={onSwitchToPharmacy}
             className="text-gray-600 active:text-[#0F3C4C] text-sm font-medium"
           >
-            Acessar como Farmácia
           </button>
         </div>
       </div>

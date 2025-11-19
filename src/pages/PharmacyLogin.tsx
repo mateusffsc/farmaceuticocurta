@@ -162,7 +162,6 @@ export default function PharmacyLogin({ onLogin, onSwitchToClient }: PharmacyLog
               onClick={onSwitchToClient}
               className="text-gray-600 active:text-[#0F3C4C] text-sm font-medium"
             >
-              Acessar como Cliente
             </button>
           </div>
         </div>
