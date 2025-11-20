@@ -9,7 +9,7 @@ type PharmacyLoginProps = {
 };
 
 export default function PharmacyLogin({ onLogin, onSwitchToClient }: PharmacyLoginProps) {
-  const [isRegistering, setIsRegistering] = useState(false);
+  const [isRegistering] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     identifier: '',

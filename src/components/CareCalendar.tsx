@@ -65,10 +65,6 @@ export default function CareCalendar({ medications, doseRecords }: CareCalendarP
     );
   };
 
-  const hasDoses = (day: number) => {
-    const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-    return getDosesForDate(date).length > 0;
-  };
 
   const getDayStats = (day: number) => {
     const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);

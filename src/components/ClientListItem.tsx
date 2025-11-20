@@ -10,7 +10,7 @@ type ClientListItemProps = {
   onViewDetails: (client: Client) => void;
 };
 
-export default function ClientListItem({ client, pharmacyId, onViewDetails }: ClientListItemProps) {
+export default function ClientListItem({ client, pharmacyId: _pharmacyId, onViewDetails }: ClientListItemProps) {
   const [medications, setMedications] = useState<Medication[]>([]);
   const [doseRecords, setDoseRecords] = useState<DoseRecord[]>([]);
   const [adherence, setAdherence] = useState(0);

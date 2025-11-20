@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Building2, LogOut, Users, UserPlus } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
-import { Pharmacy, Client, Medication, DoseRecord } from '../lib/types';
+import { Pharmacy, Client, Medication } from '../lib/types';
 import ClientListItem from '../components/ClientListItem';
 import AddClientModal from '../components/AddClientModal';
 import PharmacyOverview from '../components/PharmacyOverview';
@@ -24,7 +24,7 @@ export default function PharmacyDashboard({ onLogout }: PharmacyDashboardProps) 
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showAddMedicationModal, setShowAddMedicationModal] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState<'overview' | 'reports' | 'clients'>('clients');
 
   useEffect(() => {
@@ -160,44 +160,14 @@ export default function PharmacyDashboard({ onLogout }: PharmacyDashboardProps) 
     setShowAddMedicationModal(true);
   };
 
-  const handleMedicationAdded = async (medication: Omit<Medication, 'id' | 'created_at'>, clientId: string) => {
+  const handleMedicationAdded = async (medication: Omit<Medication, 'id' | 'created_at'>, _clientId: string) => {
     try {
-      const { data: newMed, error: medError } = await supabase
+      const { error: medError } = await supabase
         .from('medications')
-        .insert([medication])
-        .select()
-        .single();
+        .insert([medication]);
 
       if (medError) throw medError;
-
-      const schedules = medication.schedules.split(',').map(s => s.trim());
-      const startDate = new Date(medication.start_date);
-      const doses: Omit<DoseRecord, 'id' | 'created_at'>[] = [];
-
-      for (let day = 0; day < medication.treatment_duration_days; day++) {
-        const currentDate = new Date(startDate);
-        currentDate.setDate(currentDate.getDate() + day);
-
-        for (const schedule of schedules) {
-          const [hours, minutes] = schedule.split(':');
-          const scheduledTime = new Date(currentDate);
-          scheduledTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-
-          doses.push({
-            medication_id: newMed.id,
-            pharmacy_id: medication.pharmacy_id,
-            client_id: medication.client_id,
-            scheduled_time: scheduledTime.toISOString(),
-            status: 'pending',
-          });
-        }
-      }
-
-      const { error: doseError } = await supabase
-        .from('dose_records')
-        .insert(doses);
-
-      if (doseError) throw doseError;
+      // As doses são geradas automaticamente pelo trigger no banco
 
       setShowAddMedicationModal(false);
       if (selectedClient) {

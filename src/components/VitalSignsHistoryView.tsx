@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Activity, Droplet, Clock, Trash2, Calendar } from 'lucide-react';
+import { Activity, Droplet, Clock, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 type VitalSign = {

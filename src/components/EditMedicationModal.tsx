@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { X, Plus, Trash2, Clock } from 'lucide-react';
 import { Medication } from '../lib/types';
 import { supabase } from '../lib/supabase';

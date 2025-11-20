@@ -1,10 +1,17 @@
 import { useState } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
-import { Medication } from '../lib/types';
+import { } from '../lib/types';
 
 type AddMedicationModalProps = {
   onClose: () => void;
-  onAdd: (medication: Omit<Medication, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => void;
+  onAdd: (medication: {
+    name: string;
+    dosage: string;
+    schedules: string;
+    total_quantity?: number;
+    treatment_duration_days: number;
+    start_date: string;
+  }) => void;
 };
 
 export default function AddMedicationModal({ onClose, onAdd }: AddMedicationModalProps) {
@@ -58,7 +65,6 @@ export default function AddMedicationModal({ onClose, onAdd }: AddMedicationModa
       total_quantity: undefined,
       treatment_duration_days: parseInt(formData.treatment_duration_days),
       start_date: formData.start_date,
-      is_active: true,
     });
   };
 

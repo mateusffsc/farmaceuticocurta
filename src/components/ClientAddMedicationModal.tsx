@@ -68,7 +68,7 @@ export default function ClientAddMedicationModal({
     try {
       const dosageWithUnit = `${formData.dosage.trim()}mg`;
 
-      const { data: medication, error: medError } = await supabase
+      const { error: medError } = await supabase
         .from('medications')
         .insert([{
           pharmacy_id: pharmacyId,
@@ -79,44 +79,11 @@ export default function ClientAddMedicationModal({
           treatment_duration_days: parseInt(formData.treatment_duration_days),
           start_date: formData.start_date,
           notes: formData.notes.trim() || null,
-          is_active: true,
-        }])
-        .select()
-        .single();
+        }]);
 
       if (medError) throw medError;
 
-      const startDate = new Date(formData.start_date);
-      const endDate = new Date(startDate);
-      endDate.setDate(endDate.getDate() + parseInt(formData.treatment_duration_days));
-
-      const doseRecords = [];
-      const currentDate = new Date(startDate);
-
-      const validSchedules = schedules.filter(s => s.trim() !== '');
-
-      while (currentDate < endDate) {
-        for (const schedule of validSchedules) {
-          const [hours, minutes] = schedule.split(':');
-          const scheduledTime = new Date(currentDate);
-          scheduledTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-
-          doseRecords.push({
-            medication_id: medication.id,
-            pharmacy_id: pharmacyId,
-            client_id: clientId,
-            scheduled_time: scheduledTime.toISOString(),
-            status: 'pending',
-          });
-        }
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-
-      const { error: doseError } = await supabase
-        .from('dose_records')
-        .insert(doseRecords);
-
-      if (doseError) throw doseError;
+      // As doses são geradas automaticamente pelo trigger no banco
 
       onAdded();
       onClose();

@@ -25,11 +25,6 @@ export default function AdherenceCard({ doseRecords }: AdherenceCardProps) {
 
   const adherence = calculateAdherence();
 
-  const getAdherenceColor = (percentage: number) => {
-    if (percentage >= 80) return 'text-green-600';
-    if (percentage >= 60) return 'text-yellow-600';
-    return 'text-red-600';
-  };
 
   const getAdherenceMessage = (percentage: number) => {
     if (percentage >= 80) return 'Excelente adesão! Continue assim!';

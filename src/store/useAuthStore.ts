@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Pharmacy, Client, UserRole } from '../lib/types';
 import { supabase } from '../lib/supabase';
-import { isValidPhone, formatPhone, generateEmailFromPhone, getAuthEmail } from '../lib/authUtils';
+import { isValidPhone, formatPhone, getAuthEmail } from '../lib/authUtils';
 
 type AuthState = {
   user: Pharmacy | Client | null;

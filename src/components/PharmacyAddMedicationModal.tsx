@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Pill, Plus, Trash2 } from 'lucide-react';
+import { X, Plus, Trash2 } from 'lucide-react';
 import { Client, Medication } from '../lib/types';
 import { supabase } from '../lib/supabase';
 
@@ -91,7 +91,6 @@ export default function PharmacyAddMedicationModal({ onClose, onAdd, pharmacyId 
         total_quantity: undefined,
         treatment_duration_days: parseInt(formData.treatment_duration_days),
         start_date: formData.start_date,
-        is_active: true,
         notes: formData.notes.trim() || undefined,
       }, formData.client_id);
     } catch (error: any) {

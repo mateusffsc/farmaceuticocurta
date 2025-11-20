@@ -32,7 +32,7 @@ export default function PharmacyAdsManager({ pharmacyId }: PharmacyAdsManagerPro
     if (!file) return null;
     const fileName = `${pharmacyId}/${Date.now()}_${file.name}`;
     try {
-      const { data, error } = await supabase.storage
+      const { error } = await supabase.storage
         .from('banners')
         .upload(fileName, file, { upsert: false });
       if (error) throw error;
