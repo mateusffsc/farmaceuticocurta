@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Plus, Trash2, Clock } from 'lucide-react';
+import { X, Plus, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 type ClientAddMedicationModalProps = {
@@ -22,49 +22,51 @@ export default function ClientAddMedicationModal({
     start_date: new Date().toISOString().split('T')[0],
     notes: '',
   });
-  const [schedules, setSchedules] = useState<string[]>(['08:00']);
+  const [schedules, setSchedules] = useState<string[]>(['']);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
-
-  const addSchedule = () => {
-    setSchedules([...schedules, '']);
-  };
 
   const removeSchedule = (index: number) => {
     setSchedules(schedules.filter((_, i) => i !== index));
   };
 
-  const updateSchedule = (index: number, value: string) => {
-    const newSchedules = [...schedules];
-    newSchedules[index] = value;
-    setSchedules(newSchedules);
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = 'Nome é obrigatório';
+    }
+
+    if (!formData.dosage.trim()) {
+      newErrors.dosage = 'Dosagem é obrigatória';
+    } else if (!/^\d+$/.test(formData.dosage)) {
+      newErrors.dosage = 'Digite apenas números';
+    }
+
+    const validSchedules = schedules.filter(s => s.trim() !== '');
+    if (validSchedules.length === 0) {
+      newErrors.schedules = 'Adicione pelo menos um horário';
+    }
+
+    if (!formData.treatment_duration_days || parseInt(formData.treatment_duration_days) < 1) {
+      newErrors.treatment_duration_days = 'Duração deve ser pelo menos 1 dia';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.name.trim()) {
-      alert('Por favor, digite o nome do medicamento');
-      return;
-    }
-
-    if (!formData.dosage.trim()) {
-      alert('Por favor, digite a dosagem');
-      return;
-    }
-
-    const validSchedules = schedules.filter(s => s.trim() !== '');
-    if (validSchedules.length === 0) {
-      alert('Por favor, adicione pelo menos um horário');
+    if (!validate()) {
       return;
     }
 
     setLoading(true);
 
     try {
-      const dosageValue = formData.dosage.trim();
-      const dosageWithUnit = dosageValue.match(/mg|g|ml|comprimido|cápsula/i)
-        ? dosageValue
-        : `${dosageValue}mg`;
+      const dosageWithUnit = `${formData.dosage.trim()}mg`;
 
       const { data: medication, error: medError } = await supabase
         .from('medications')
@@ -73,7 +75,7 @@ export default function ClientAddMedicationModal({
           client_id: clientId,
           name: formData.name.trim(),
           dosage: dosageWithUnit,
-          schedules: validSchedules.join(', '),
+          schedules: schedules.filter(s => s.trim() !== '').join(', '),
           treatment_duration_days: parseInt(formData.treatment_duration_days),
           start_date: formData.start_date,
           notes: formData.notes.trim() || null,
@@ -90,6 +92,8 @@ export default function ClientAddMedicationModal({
 
       const doseRecords = [];
       const currentDate = new Date(startDate);
+
+      const validSchedules = schedules.filter(s => s.trim() !== '');
 
       while (currentDate < endDate) {
         for (const schedule of validSchedules) {
@@ -116,152 +120,199 @@ export default function ClientAddMedicationModal({
 
       onAdded();
       onClose();
-    } catch (error) {
-      console.error('Error adding medication:', error);
-      alert('Erro ao adicionar medicamento. Tente novamente.');
+    } catch (error: any) {
+      setErrors({ general: error.message || 'Erro ao adicionar medicamento' });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-      <div className="bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-t-3xl max-h-[90vh] overflow-y-auto safe-bottom">
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-800">Adicionar Medicamento</h2>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-[#0F3C4C]">
+            Adicionar Medicamento
+          </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition"
+            className="text-gray-400 hover:text-gray-600 transition"
           >
-            <X className="w-5 h-5" />
+            <X className="w-6 h-6" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Nome do Medicamento *
             </label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="Ex: Paracetamol"
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0F3C4C] focus:border-[#0F3C4C] outline-none"
-              required
+              placeholder="Ex: Losartana"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F3C4C] focus:border-transparent outline-none"
             />
+            {errors.name && (
+              <p className="text-red-600 text-sm mt-1">{errors.name}</p>
+            )}
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Dosagem *
             </label>
-            <input
-              type="text"
-              value={formData.dosage}
-              onChange={(e) => setFormData({ ...formData, dosage: e.target.value })}
-              placeholder="Ex: 500mg ou 1 comprimido"
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0F3C4C] focus:border-[#0F3C4C] outline-none"
-              required
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Digite com a unidade (mg, g, ml, comprimido, cápsula)
-            </p>
+            <div className="relative">
+              <input
+                type="text"
+                value={formData.dosage}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, '');
+                  setFormData({ ...formData, dosage: value });
+                }}
+                placeholder="Ex: 50"
+                className="w-full px-4 py-2 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F3C4C] focus:border-transparent outline-none"
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">
+                mg
+              </span>
+            </div>
+            {errors.dosage && (
+              <p className="text-red-600 text-sm mt-1">{errors.dosage}</p>
+            )}
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Horários *
             </label>
             <div className="space-y-2">
               {schedules.map((schedule, index) => (
                 <div key={index} className="flex gap-2">
-                  <div className="flex-1 relative">
-                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type="time"
-                      value={schedule}
-                      onChange={(e) => updateSchedule(index, e.target.value)}
-                      className="w-full pl-11 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0F3C4C] focus:border-[#0F3C4C] outline-none"
-                      required
-                    />
-                  </div>
+                  <select
+                    value={schedule}
+                    onChange={(e) => {
+                      const newSchedules = [...schedules];
+                      newSchedules[index] = e.target.value;
+                      setSchedules(newSchedules);
+                    }}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F3C4C] focus:border-transparent outline-none"
+                  >
+                    <option value="">Selecione um horário</option>
+                    <option value="00:00">00:00</option>
+                    <option value="01:00">01:00</option>
+                    <option value="02:00">02:00</option>
+                    <option value="03:00">03:00</option>
+                    <option value="04:00">04:00</option>
+                    <option value="05:00">05:00</option>
+                    <option value="06:00">06:00</option>
+                    <option value="07:00">07:00</option>
+                    <option value="08:00">08:00</option>
+                    <option value="09:00">09:00</option>
+                    <option value="10:00">10:00</option>
+                    <option value="11:00">11:00</option>
+                    <option value="12:00">12:00</option>
+                    <option value="13:00">13:00</option>
+                    <option value="14:00">14:00</option>
+                    <option value="15:00">15:00</option>
+                    <option value="16:00">16:00</option>
+                    <option value="17:00">17:00</option>
+                    <option value="18:00">18:00</option>
+                    <option value="19:00">19:00</option>
+                    <option value="20:00">20:00</option>
+                    <option value="21:00">21:00</option>
+                    <option value="22:00">22:00</option>
+                    <option value="23:00">23:00</option>
+                  </select>
                   {schedules.length > 1 && (
                     <button
                       type="button"
                       onClick={() => removeSchedule(index)}
-                      className="p-3 text-red-600 hover:bg-red-50 rounded-xl transition"
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
                     >
                       <Trash2 className="w-5 h-5" />
                     </button>
                   )}
                 </div>
               ))}
+              <button
+                type="button"
+                onClick={() => setSchedules([...schedules, ''])}
+                className="w-full px-4 py-2 border-2 border-dashed border-gray-300 text-gray-600 rounded-lg hover:border-[#0F3C4C] hover:text-[#0F3C4C] transition flex items-center justify-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Adicionar horário
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={addSchedule}
-              className="mt-2 flex items-center gap-2 text-[#0F3C4C] text-sm font-semibold active:scale-95 transition"
-            >
-              <Plus className="w-4 h-4" />
-              Adicionar Horário
-            </button>
+            {errors.schedules && (
+              <p className="text-red-600 text-sm mt-1">{errors.schedules}</p>
+            )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Data de Início *
               </label>
               <input
                 type="date"
                 value={formData.start_date}
                 onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0F3C4C] focus:border-[#0F3C4C] outline-none"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Duração (dias) *
-              </label>
-              <input
-                type="number"
-                min="1"
-                value={formData.treatment_duration_days}
-                onChange={(e) => setFormData({ ...formData, treatment_duration_days: e.target.value })}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0F3C4C] focus:border-[#0F3C4C] outline-none"
-                required
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F3C4C] focus:border-transparent outline-none"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Duração do Tratamento (dias) *
+            </label>
+            <input
+              type="number"
+              value={formData.treatment_duration_days}
+              onChange={(e) => setFormData({ ...formData, treatment_duration_days: e.target.value })}
+              placeholder="Ex: 30"
+              min="1"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F3C4C] focus:border-transparent outline-none"
+            />
+            {errors.treatment_duration_days && (
+              <p className="text-red-600 text-sm mt-1">{errors.treatment_duration_days}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Observações (opcional)
             </label>
             <textarea
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="Ex: Tomar após as refeições"
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0F3C4C] focus:border-[#0F3C4C] outline-none resize-none"
+              placeholder="Instruções especiais, observações..."
               rows={3}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F3C4C] focus:border-transparent outline-none resize-none"
             />
           </div>
 
-          <div className="flex gap-3 pt-2">
+          {errors.general && (
+            <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm">
+              {errors.general}
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold active:bg-gray-50 transition"
+              className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
+              disabled={loading}
             >
               Cancelar
             </button>
             <button
               type="submit"
+              className="flex-1 px-4 py-3 bg-[#0F3C4C] text-white rounded-lg hover:bg-[#0d3340] transition font-medium disabled:opacity-50"
               disabled={loading}
-              className="flex-1 py-3 bg-[#0F3C4C] text-white rounded-xl font-semibold active:bg-[#0d3340] transition disabled:opacity-50 active:scale-95"
             >
               {loading ? 'Adicionando...' : 'Adicionar'}
             </button>
