@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Clock, Check, X, AlertCircle, Info, Trash2 } from 'lucide-react';
+import { Clock, Check, X, AlertCircle, Info, Trash2, Edit2 } from 'lucide-react';
 import { Medication, DoseRecord } from '../lib/types';
 import ReportIssueModal from './ReportIssueModal';
 import DoseDetailsModal from './DoseDetailsModal';
+import EditMedicationModal from './EditMedicationModal';
 
 type MedicationCardProps = {
   medication: Medication;
@@ -19,6 +20,7 @@ export default function MedicationCard({ medication, doses, clientId, pharmacyId
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedDose, setSelectedDose] = useState<DoseRecord | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   const getStatusColor = (status: string, hasIssues?: boolean) => {
     if (hasIssues) return 'bg-orange-100 text-orange-700 border-orange-300';
@@ -90,30 +92,40 @@ export default function MedicationCard({ medication, doses, clientId, pharmacyId
               </h3>
               <p className="text-gray-600 text-sm">{medication.dosage}</p>
             </div>
-            <div className="flex items-center gap-2">
-              {typeof medication.remaining_doses === 'number' && (
-                <div className="text-right">
-                  <div className="inline-flex items-center gap-2 bg-gray-100 text-gray-800 px-2.5 py-1 rounded-lg text-xs font-semibold">
-                    Restantes
-                    <span className="bg-[#0F3C4C] text-white px-2 py-0.5 rounded-md text-xs">
-                      {medication.remaining_doses}
-                    </span>
-                  </div>
+          <div className="flex items-center gap-2">
+            {typeof medication.remaining_doses === 'number' && (
+              <div className="text-right">
+                <div className="inline-flex items-center gap-2 bg-gray-100 text-gray-800 px-2.5 py-1 rounded-lg text-xs font-semibold">
+                  Restantes
+                  <span className="bg-[#0F3C4C] text-white px-2 py-0.5 rounded-md text-xs">
+                    {medication.remaining_doses}
+                  </span>
                 </div>
-              )}
-              {onDelete && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowDeleteConfirm(true);
-                  }}
-                  className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                  title="Deletar medicamento"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              )}
-            </div>
+              </div>
+            )}
+            {onDelete && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowDeleteConfirm(true);
+                }}
+                className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                title="Deletar medicamento"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowEditModal(true);
+              }}
+              className="p-2 text-[#0F3C4C] hover:bg-gray-100 rounded-lg transition-colors"
+              title="Editar medicamento"
+            >
+              <Edit2 className="w-4 h-4" />
+            </button>
+          </div>
           </div>
         </div>
 
@@ -270,6 +282,17 @@ export default function MedicationCard({ medication, doses, clientId, pharmacyId
             </div>
           </div>
         </div>
+      )}
+
+      {showEditModal && (
+        <EditMedicationModal
+          medication={medication}
+          onClose={() => setShowEditModal(false)}
+          onUpdated={() => {
+            setShowEditModal(false);
+            onIssueReported();
+          }}
+        />
       )}
     </>
   );

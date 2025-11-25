@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { X, User, Pill, Plus, AlertCircle } from 'lucide-react';
+import { X, User, Pill, Plus, AlertCircle, Edit2 } from 'lucide-react';
+import EditClientModal from './EditClientModal';
 import { Client, Medication, DoseRecord } from '../lib/types';
 import { supabase } from '../lib/supabase';
 import MedicationCard from './MedicationCard';
@@ -22,6 +23,7 @@ export default function ClientDetailsModal({
   const [doseRecords, setDoseRecords] = useState<DoseRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [showEventsModal, setShowEventsModal] = useState(false);
+  const [showEditClientModal, setShowEditClientModal] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -97,12 +99,21 @@ export default function ClientDetailsModal({
               <p className="text-sm text-gray-600">{client.email}</p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition"
-          >
-            <X className="w-6 h-6" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowEditClientModal(true)}
+              className="p-2 text-[#0F3C4C] hover:bg-gray-100 rounded-lg transition"
+              title="Editar cliente"
+            >
+              <Edit2 className="w-5 h-5" />
+            </button>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
         </div>
 
         <div className="p-6">
@@ -178,6 +189,17 @@ export default function ClientDetailsModal({
         <ClientEventsModal
           client={client}
           onClose={() => setShowEventsModal(false)}
+        />
+      )}
+
+      {showEditClientModal && (
+        <EditClientModal
+          client={client}
+          onClose={() => setShowEditClientModal(false)}
+          onUpdated={() => {
+            setShowEditClientModal(false);
+            loadData();
+          }}
         />
       )}
     </div>
