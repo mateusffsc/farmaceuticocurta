@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { X, User, Pill, Plus, AlertCircle, Edit2 } from 'lucide-react';
+import { X, User, Pill, Plus, AlertCircle, Edit2, Activity } from 'lucide-react';
 import EditClientModal from './EditClientModal';
 import { Client, Medication, DoseRecord } from '../lib/types';
 import { supabase } from '../lib/supabase';
 import MedicationCard from './MedicationCard';
 import ClientEventsModal from './ClientEventsModal';
+import AddVitalSignModal from './AddVitalSignModal';
 
 type ClientDetailsModalProps = {
   client: Client;
@@ -24,6 +25,7 @@ export default function ClientDetailsModal({
   const [loading, setLoading] = useState(true);
   const [showEventsModal, setShowEventsModal] = useState(false);
   const [showEditClientModal, setShowEditClientModal] = useState(false);
+  const [showAddVitalModal, setShowAddVitalModal] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -102,10 +104,18 @@ export default function ClientDetailsModal({
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowEditClientModal(true)}
-              className="p-2 text-[#0F3C4C] hover:bg-gray-100 rounded-lg transition"
+              className="p-2 text[#0F3C4C] hover:bg-gray-100 rounded-lg transition"
               title="Editar cliente"
             >
               <Edit2 className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setShowAddVitalModal(true)}
+              className="flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition text-sm font-medium"
+              title="Registrar sinais vitais"
+            >
+              <Activity className="w-4 h-4" />
+              Registrar Sinais Vitais
             </button>
             <button
               onClick={onClose}
@@ -200,6 +210,15 @@ export default function ClientDetailsModal({
             setShowEditClientModal(false);
             loadData();
           }}
+        />
+      )}
+
+      {showAddVitalModal && (
+        <AddVitalSignModal
+          clientId={client.id}
+          pharmacyId={pharmacyId}
+          onClose={() => setShowAddVitalModal(false)}
+          onAdded={() => setShowAddVitalModal(false)}
         />
       )}
     </div>
