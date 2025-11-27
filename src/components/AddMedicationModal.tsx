@@ -11,6 +11,8 @@ type AddMedicationModalProps = {
     total_quantity?: number;
     treatment_duration_days: number;
     start_date: string;
+    recurrence_type?: 'continuous' | 'weekly' | 'biweekly' | 'monthly' | 'custom';
+    recurrence_custom_dates?: string;
   }) => void;
 };
 
@@ -18,10 +20,13 @@ export default function AddMedicationModal({ onClose, onAdd }: AddMedicationModa
   const [formData, setFormData] = useState({
     name: '',
     dosage: '',
+    unit: 'mg',
     treatment_duration_days: '30',
     start_date: new Date().toISOString().split('T')[0],
+    recurrence_type: 'continuous',
   });
   const [schedules, setSchedules] = useState<string[]>(['']);
+  const [customDates, setCustomDates] = useState<string[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validate = () => {
@@ -38,9 +43,12 @@ export default function AddMedicationModal({ onClose, onAdd }: AddMedicationModa
     }
 
     const validSchedules = schedules.filter(s => s.trim() !== '');
-    if (validSchedules.length === 0) {
+    const isPRN = formData.recurrence_type === 'custom' && customDates.filter(d => d.trim() !== '').length === 0;
+    if (validSchedules.length === 0 && !isPRN) {
       newErrors.schedules = 'Adicione pelo menos um horário';
     }
+
+    // Para PRN (custom sem datas), permitir sem datas
 
     if (!formData.treatment_duration_days || parseInt(formData.treatment_duration_days) < 1) {
       newErrors.treatment_duration_days = 'Duração deve ser pelo menos 1 dia';
@@ -60,12 +68,14 @@ export default function AddMedicationModal({ onClose, onAdd }: AddMedicationModa
     const validSchedules = schedules.filter(s => s.trim() !== '');
     onAdd({
       name: formData.name.trim(),
-      dosage: `${formData.dosage.trim()}mg`,
+      dosage: `${formData.dosage.trim()}${formData.unit}`,
       schedules: validSchedules.join(', '),
       total_quantity: undefined,
       treatment_duration_days: parseInt(formData.treatment_duration_days),
-      start_date: formData.start_date,
-    });
+        start_date: formData.start_date,
+        recurrence_type: formData.recurrence_type as any,
+        recurrence_custom_dates: formData.recurrence_type === 'custom' ? customDates.filter(d => d).join(', ') : undefined,
+      });
   };
 
   return (
@@ -185,11 +195,108 @@ export default function AddMedicationModal({ onClose, onAdd }: AddMedicationModa
                 <Plus className="w-4 h-4" />
                 Adicionar horário
               </button>
-            </div>
-            {errors.schedules && (
-              <p className="text-red-600 text-sm mt-1">{errors.schedules}</p>
-            )}
+        </div>
+        {errors.schedules && (
+          <p className="text-red-600 text-sm mt-1">{errors.schedules}</p>
+        )}
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Unidade da Dosagem</label>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={formData.dosage}
+            onChange={(e) => {
+              const value = e.target.value.replace(/[^0-9]/g, '');
+              setFormData({ ...formData, dosage: value });
+            }}
+            placeholder="Ex: 10"
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F3C4C] focus:border-transparent outline-none"
+          />
+          <select
+            value={formData.unit}
+            onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F3C4C] focus:border-transparent outline-none bg-white"
+          >
+            <option value="mg">mg</option>
+            <option value="g">g</option>
+            <option value="ml">ml</option>
+            <option value="comprimido">comprimido</option>
+            <option value="cápsula">cápsula</option>
+            <option value="gota">gota</option>
+            <option value="gotas">gotas</option>
+          </select>
+        </div>
+        {errors.dosage && (
+          <p className="text-red-600 text-sm mt-1">{errors.dosage}</p>
+        )}
+      </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de Tratamento</label>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { value: 'continuous', label: 'Contínuo (diário)' },
+              { value: 'weekly', label: 'Semanal' },
+              { value: 'biweekly', label: 'Quinzenal' },
+              { value: 'monthly', label: 'Mensal' },
+              { value: 'custom', label: 'Datas específicas' },
+            ].map(opt => (
+              <label key={opt.value} className={`px-3 py-2 rounded-lg border cursor-pointer ${formData.recurrence_type === opt.value ? 'border-[#0F3C4C] text-[#0F3C4C] font-semibold' : 'border-gray-300 text-gray-700'}`}>
+                <input
+                  type="radio"
+                  name="recurrence_type"
+                  value={opt.value}
+                  checked={formData.recurrence_type === opt.value}
+                  onChange={(e) => setFormData({ ...formData, recurrence_type: e.target.value })}
+                  className="mr-2"
+                />
+                {opt.label}
+              </label>
+            ))}
           </div>
+          {errors.recurrence && (
+            <p className="text-red-600 text-sm mt-1">{errors.recurrence}</p>
+          )}
+        </div>
+
+        {formData.recurrence_type === 'custom' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Datas específicas</label>
+            <div className="space-y-2">
+              {customDates.map((d, idx) => (
+                <div key={idx} className="flex gap-2">
+                  <input
+                    type="date"
+                    value={d}
+                    onChange={(e) => {
+                      const next = [...customDates];
+                      next[idx] = e.target.value;
+                      setCustomDates(next);
+                    }}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F3C4C] focus:border-transparent outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setCustomDates(customDates.filter((_, i) => i !== idx))}
+                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => setCustomDates([...customDates, ''])}
+                className="w-full px-4 py-2 border-2 border-dashed border-gray-300 text-gray-600 rounded-lg hover:border-[#0F3C4C] hover:text-[#0F3C4C] transition flex items-center justify-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Adicionar data
+              </button>
+            </div>
+          </div>
+        )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

@@ -33,6 +33,8 @@ export type Medication = {
   treatment_duration_days: number;
   start_date: string;
   notes?: string;
+  recurrence_type?: 'continuous' | 'weekly' | 'biweekly' | 'monthly' | 'custom';
+  recurrence_custom_dates?: string;
   created_at: string;
 };
 

@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Clock, Check, X, AlertCircle, Info, Trash2, Edit2 } from 'lucide-react';
+import { Clock, Check, X, AlertCircle, Info, Trash2, Edit2, PlusCircle } from 'lucide-react';
 import { Medication, DoseRecord } from '../lib/types';
 import ReportIssueModal from './ReportIssueModal';
 import DoseDetailsModal from './DoseDetailsModal';
 import EditMedicationModal from './EditMedicationModal';
+import AddPrnDoseModal from './AddPrnDoseModal';
 
 type MedicationCardProps = {
   medication: Medication;
@@ -16,11 +17,12 @@ type MedicationCardProps = {
 };
 
 export default function MedicationCard({ medication, doses, clientId, pharmacyId, onDoseAction, onIssueReported, onDelete }: MedicationCardProps) {
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [selectedDose, setSelectedDose] = useState<DoseRecord | null>(null);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [selectedDose, setSelectedDose] = useState<DoseRecord | null>(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
+  const [showPrnModal, setShowPrnModal] = useState(false);
 
   const getStatusColor = (status: string, hasIssues?: boolean) => {
     if (hasIssues) return 'bg-orange-100 text-orange-700 border-orange-300';
@@ -103,6 +105,32 @@ export default function MedicationCard({ medication, doses, clientId, pharmacyId
                 </div>
               </div>
             )}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowEditModal(true);
+              }}
+              className="p-2 text-[#0F3C4C] hover:bg-gray-100 rounded-lg transition-colors"
+              title="Editar medicamento"
+            >
+              <Edit2 className="w-4 h-4" />
+            </button>
+            {(
+              medication.recurrence_type === 'custom' &&
+              (!medication.recurrence_custom_dates || medication.recurrence_custom_dates.trim() === '')
+            ) && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowPrnModal(true);
+                }}
+                className="flex items-center gap-2 bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition text-xs font-semibold"
+                title="Registrar uso (PRN)"
+              >
+                <PlusCircle className="w-4 h-4" />
+                Registrar uso
+              </button>
+            )}
             {onDelete && (
               <button
                 onClick={(e) => {
@@ -115,16 +143,6 @@ export default function MedicationCard({ medication, doses, clientId, pharmacyId
                 <Trash2 className="w-4 h-4" />
               </button>
             )}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowEditModal(true);
-              }}
-              className="p-2 text-[#0F3C4C] hover:bg-gray-100 rounded-lg transition-colors"
-              title="Editar medicamento"
-            >
-              <Edit2 className="w-4 h-4" />
-            </button>
           </div>
           </div>
         </div>
@@ -290,6 +308,19 @@ export default function MedicationCard({ medication, doses, clientId, pharmacyId
           onClose={() => setShowEditModal(false)}
           onUpdated={() => {
             setShowEditModal(false);
+            onIssueReported();
+          }}
+        />
+      )}
+
+      {showPrnModal && (
+        <AddPrnDoseModal
+          medication={medication}
+          clientId={clientId}
+          pharmacyId={pharmacyId}
+          onClose={() => setShowPrnModal(false)}
+          onAdded={() => {
+            setShowPrnModal(false);
             onIssueReported();
           }}
         />
