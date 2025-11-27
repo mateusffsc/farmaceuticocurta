@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import PharmacyAdsManager from './PharmacyAdsManager';
-import { BarChart2, Users, CheckCircle, AlertCircle } from 'lucide-react';
+import { BarChart2, Users, CheckCircle, AlertCircle, Search } from 'lucide-react';
 
 type Client = { id: string; name: string; phone?: string };
 type Medication = { id: string; name: string; client_id: string; is_active?: boolean; remaining_doses?: number };
@@ -20,6 +20,7 @@ export default function PharmacyReports({ pharmacyId }: PharmacyReportsProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [range, setRange] = useState<TimeRange>('30d');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const load = async () => {
@@ -133,6 +134,12 @@ export default function PharmacyReports({ pharmacyId }: PharmacyReportsProps) {
     return rows.slice(0, 10);
   }, [doses, clientNameById, range]);
 
+  const filteredLowAdherenceClients = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return lowAdherenceClients;
+    return lowAdherenceClients.filter(row => row.name.toLowerCase().includes(q));
+  }, [lowAdherenceClients, searchQuery]);
+
   const activeMedications = useMemo(() => medications.filter(m => m.is_active !== false).length, [medications]);
 
   const maxMedUsed = Math.max(...topMedicationsUsed.map(i => i.count), 1);
@@ -153,6 +160,12 @@ export default function PharmacyReports({ pharmacyId }: PharmacyReportsProps) {
     rows.sort((a, b) => a.remaining - b.remaining);
     return rows.slice(0, 30);
   }, [medications, clientsById]);
+
+  const filteredLowStockRows = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return lowStockRows;
+    return lowStockRows.filter(row => row.clientName.toLowerCase().includes(q));
+  }, [lowStockRows, searchQuery]);
 
   const buildWhatsAppLink = (phone: string | undefined, clientName: string, medicationName: string) => {
     if (!phone) return undefined;
@@ -180,6 +193,16 @@ export default function PharmacyReports({ pharmacyId }: PharmacyReportsProps) {
             onClick={() => setRange('30d')}
             className={`px-3 py-1.5 rounded-lg text-sm border ${range === '30d' ? 'bg-[#0F3C4C] text-white border-transparent' : 'bg-white text-gray-700 border-gray-300'}`}
           >30 dias</button>
+          <div className="relative ml-2">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Buscar cliente..."
+              className="pl-9 pr-3 py-1.5 w-56 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F3C4C] focus:border-transparent outline-none"
+            />
+          </div>
         </div>
       </div>
 
@@ -258,12 +281,12 @@ export default function PharmacyReports({ pharmacyId }: PharmacyReportsProps) {
                   </tr>
                 </thead>
                 <tbody>
-                  {lowAdherenceClients.length === 0 ? (
+                  {filteredLowAdherenceClients.length === 0 ? (
                     <tr>
                       <td colSpan={3} className="py-3 text-gray-500">Sem dados</td>
                     </tr>
                   ) : (
-                    lowAdherenceClients.map(row => (
+                    filteredLowAdherenceClients.map(row => (
                       <tr key={row.clientId} className="border-t border-gray-200">
                         <td className="py-2 pr-3 font-medium text-gray-800">{row.name}</td>
                         <td className="py-2 pr-3">
@@ -296,12 +319,12 @@ export default function PharmacyReports({ pharmacyId }: PharmacyReportsProps) {
                   </tr>
                 </thead>
                 <tbody>
-                  {lowStockRows.length === 0 ? (
+                  {filteredLowStockRows.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="py-3 text-gray-500">Sem dados</td>
                     </tr>
                   ) : (
-                    lowStockRows.map((row, idx) => {
+                    filteredLowStockRows.map((row, idx) => {
                       const waLink = buildWhatsAppLink(row.phone, row.clientName, row.medicationName);
                       return (
                         <tr key={`${row.clientId}-${idx}`} className="border-t border-gray-200">

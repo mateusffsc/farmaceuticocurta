@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, User, Mail, Phone, Calendar } from 'lucide-react';
+import { X, User, Mail, Phone, Calendar, Key } from 'lucide-react';
 import { Client } from '../lib/types';
 import { supabase } from '../lib/supabase';
 import { isValidPhone } from '../lib/authUtils';
@@ -21,6 +21,8 @@ export default function EditClientModal({ client, onClose, onUpdated }: EditClie
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetMessage, setResetMessage] = useState<string | null>(null);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -67,6 +69,25 @@ export default function EditClientModal({ client, onClose, onUpdated }: EditClie
       setErrors({ general: error.message || 'Erro ao atualizar cliente' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    setResetMessage(null);
+    const email = formData.email.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setErrors({ ...errors, email: 'Informe um email válido para recuperar a senha' });
+      return;
+    }
+    setResetLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      if (error) throw error;
+      setResetMessage('Link de recuperação enviado para o email do cliente.');
+    } catch (e: any) {
+      setErrors({ general: e.message || 'Falha ao enviar recuperação de senha' });
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -124,6 +145,19 @@ export default function EditClientModal({ client, onClose, onUpdated }: EditClie
               />
             </div>
             {errors.email && <p className="text-red-600 text-sm mt-1">{errors.email}</p>}
+            <div className="mt-2 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleResetPassword}
+                className="inline-flex items-center gap-2 px-3 py-2 border border-[#0F3C4C] text-[#0F3C4C] rounded-lg hover:bg-[#0F3C4C] hover:text-white transition text-sm"
+                disabled={resetLoading}
+                title="Enviar link de recuperação de senha"
+              >
+                <Key className="w-4 h-4" />
+                {resetLoading ? 'Enviando…' : 'Recuperar senha'}
+              </button>
+              {resetMessage && <span className="text-green-700 text-xs">{resetMessage}</span>}
+            </div>
           </div>
 
           <div>
