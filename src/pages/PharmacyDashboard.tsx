@@ -350,6 +350,7 @@ export default function PharmacyDashboard({ onLogout }: PharmacyDashboardProps) 
           }}
           onAdd={handleMedicationAdded}
           pharmacyId={pharmacy.id}
+          client={selectedClient}
         />
       )}
     </div>

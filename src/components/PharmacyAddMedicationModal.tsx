@@ -7,12 +7,13 @@ type PharmacyAddMedicationModalProps = {
   onClose: () => void;
   onAdd: (medication: Omit<Medication, 'id' | 'created_at' | 'updated_at'>, clientId: string) => Promise<void>;
   pharmacyId: string;
+  client?: Client;
 };
 
-export default function PharmacyAddMedicationModal({ onClose, onAdd, pharmacyId }: PharmacyAddMedicationModalProps) {
+export default function PharmacyAddMedicationModal({ onClose, onAdd, pharmacyId, client }: PharmacyAddMedicationModalProps) {
   const [clients, setClients] = useState<Client[]>([]);
   const [formData, setFormData] = useState({
-    client_id: '',
+    client_id: client?.id || '',
     name: '',
     dosage: '',
     unit: 'mg',
@@ -27,8 +28,16 @@ export default function PharmacyAddMedicationModal({ onClose, onAdd, pharmacyId 
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    loadClients();
-  }, [pharmacyId]);
+    if (!client) {
+      loadClients();
+    }
+  }, [pharmacyId, client]);
+
+  useEffect(() => {
+    if (client && client.id !== formData.client_id) {
+      setFormData(prev => ({ ...prev, client_id: client.id }));
+    }
+  }, [client]);
 
   const loadClients = async () => {
     try {
@@ -124,26 +133,35 @@ export default function PharmacyAddMedicationModal({ onClose, onAdd, pharmacyId 
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Cliente *
-            </label>
-            <select
-              value={formData.client_id}
-              onChange={(e) => setFormData({ ...formData, client_id: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F3C4C] focus:border-transparent outline-none"
-            >
-              <option value="">Selecione um cliente</option>
-              {clients.map(client => (
-                <option key={client.id} value={client.id}>
-                  {client.name}
-                </option>
-              ))}
-            </select>
-            {errors.client_id && (
-              <p className="text-red-600 text-sm mt-1">{errors.client_id}</p>
-            )}
-          </div>
+          {client ? (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Cliente</label>
+              <div className="px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-800">
+                {client.name}
+              </div>
+            </div>
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Cliente *
+              </label>
+              <select
+                value={formData.client_id}
+                onChange={(e) => setFormData({ ...formData, client_id: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F3C4C] focus:border-transparent outline-none"
+              >
+                <option value="">Selecione um cliente</option>
+                {clients.map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              {errors.client_id && (
+                <p className="text-red-600 text-sm mt-1">{errors.client_id}</p>
+              )}
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
