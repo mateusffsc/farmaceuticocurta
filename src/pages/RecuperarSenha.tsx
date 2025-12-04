@@ -37,47 +37,30 @@ export default function RecuperarSenha() {
       const url = import.meta.env.DEV ? '/edge/update-password' : `${fnBase}/update-password`;
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 15000);
-
-      try {
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ phone: digits, newPassword: password }),
-          signal: controller.signal,
-        });
-        clearTimeout(timeout);
-
-        if (!res.ok) {
-          const text = await res.text().catch(() => '');
-          let message = text;
-          let parsedError: string | undefined;
-          try {
-            const parsed: { error?: string } = JSON.parse(text);
-            parsedError = parsed.error;
-          } catch {
-            parsedError = undefined;
-          }
-          if (parsedError) {
-            message = parsedError;
-          }
-          setError(message || `Erro ${res.status} ao alterar senha`);
-          return;
-        }
-        const payload = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
-        if (payload.ok) {
-          setSuccess('Senha alterada com sucesso. Você já pode entrar.');
-        } else {
-          setError(payload.error || 'Falha ao alterar senha');
-        }
-      } catch (err: unknown) {
-        const message = err instanceof DOMException && err.name === 'AbortError'
-          ? 'Tempo excedido ao comunicar com o servidor. Tente novamente.'
-          : err instanceof Error
-            ? err.message
-            : 'Falha de rede ao alterar senha';
-        setError(message);
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: digits, newPassword: password }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        let message = text;
+        let parsedError: string | undefined;
+        try {
+          const parsed: { error?: string } = JSON.parse(text);
+          parsedError = parsed.error;
+        } catch {}
+        if (parsedError) message = parsedError;
+        setError(message || `Erro ${res.status} ao alterar senha`);
+        return;
+      }
+      const payload = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+      if (payload.ok) {
+        setSuccess('Senha alterada com sucesso. Você já pode entrar.');
+      } else {
+        setError(payload.error || 'Falha ao alterar senha');
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Falha ao iniciar recuperação de senha';
@@ -167,6 +150,7 @@ export default function RecuperarSenha() {
           >
             {loading ? 'Processando...' : 'Recuperar Senha'}
           </button>
+
 
           <div className="mt-3 text-center">
             <a href="/" className="text-gray-600 active:text-[#0F3C4C] text-sm font-medium">Voltar ao login</a>
