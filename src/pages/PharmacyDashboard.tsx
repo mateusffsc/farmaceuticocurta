@@ -94,6 +94,10 @@ export default function PharmacyDashboard({ onLogout }: PharmacyDashboardProps) 
     // Determinar o email para autenticação (telefone ou email real)
     const authEmail = getAuthEmail(clientData.phone);
     console.log('📧 Email gerado para auth:', authEmail);
+    const phoneDigits = (() => {
+      const d = clientData.phone.replace(/\D/g, '');
+      return d.startsWith('55') && d.length === 13 ? d.slice(2) : d;
+    })();
     
     const { data: authData, error: signUpError } = await supabase.auth.signUp({
       email: authEmail,
@@ -107,16 +111,16 @@ export default function PharmacyDashboard({ onLogout }: PharmacyDashboardProps) 
 
     if (authData.user) {
       console.log('✅ Usuário criado no Supabase, ID:', authData.user.id);
-      // Verificar se já existe cliente com esse telefone
-      if (clientData.phone) {
+      // Verificar se já existe cliente com esse telefone (normalizado)
+      if (phoneDigits) {
         const { data: existing } = await supabase
           .from('clients')
           .select('id')
-          .eq('phone', clientData.phone)
+          .eq('phone', phoneDigits)
           .maybeSingle();
         
         if (existing) {
-          console.error('❌ Telefone já existe:', clientData.phone);
+          console.error('❌ Telefone já existe:', phoneDigits);
           throw new Error('Já existe um cliente cadastrado com este telefone');
         }
       }
@@ -128,7 +132,7 @@ export default function PharmacyDashboard({ onLogout }: PharmacyDashboardProps) 
           pharmacy_id: pharmacy.id,
           name: clientData.name,
           email: clientData.email || null,
-          phone: clientData.phone,
+          phone: phoneDigits,
           date_of_birth: clientData.date_of_birth,
           monitor_bp: clientData.monitor_bp ?? false,
           monitor_glucose: clientData.monitor_glucose ?? false,

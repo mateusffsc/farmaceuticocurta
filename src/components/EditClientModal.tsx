@@ -50,12 +50,16 @@ export default function EditClientModal({ client, onClose, onUpdated }: EditClie
     if (!validate()) return;
     setLoading(true);
     try {
+      const phoneDigits = (() => {
+        const d = formData.phone.replace(/\D/g, '');
+        return d.startsWith('55') && d.length === 13 ? d.slice(2) : d;
+      })();
       const { error } = await supabase
         .from('clients')
         .update({
           name: formData.name.trim(),
           email: formData.email.trim() || null,
-          phone: formData.phone.trim(),
+          phone: phoneDigits,
           date_of_birth: formData.date_of_birth || null,
           monitor_bp: formData.monitor_bp,
           monitor_glucose: formData.monitor_glucose,

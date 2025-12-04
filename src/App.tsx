@@ -4,6 +4,7 @@ import PharmacyLogin from './pages/PharmacyLogin';
 import ClientLogin from './pages/ClientLogin';
 import PharmacyDashboard from './pages/PharmacyDashboard';
 import ClientDashboard from './pages/ClientDashboard';
+import RecuperarSenha from './pages/RecuperarSenha';
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -22,6 +23,10 @@ function App() {
     };
     initAuth();
   }, [checkAuth]);
+
+  if (typeof window !== 'undefined' && window.location.pathname === '/recuperarsenha') {
+    return <RecuperarSenha />;
+  }
 
   if (isLoading) {
     return (
