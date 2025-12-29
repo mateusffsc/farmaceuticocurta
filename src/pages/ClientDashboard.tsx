@@ -396,17 +396,14 @@ export default function ClientDashboard({ onLogout }: ClientDashboardProps) {
         ) : currentView === 'home' && (
           <div className="space-y-4">
             {medications.map((medication) => {
-              const now = new Date();
-              const today = new Date(now); today.setHours(0, 0, 0, 0);
+              const today = new Date(); today.setHours(0, 0, 0, 0);
               const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
 
               const medDoses = doseRecords
                 .filter(dose => {
                   if (dose.medication_id !== medication.id) return false;
                   const t = new Date(dose.scheduled_time);
-                  const isToday = t >= today && t < tomorrow;
-                  const isOverdueNotTaken = t < today && dose.status !== 'taken';
-                  return isToday || isOverdueNotTaken;
+                  return t >= today && t < tomorrow;
                 })
                 .sort((a, b) =>
                   new Date(a.scheduled_time).getTime() - new Date(b.scheduled_time).getTime()
