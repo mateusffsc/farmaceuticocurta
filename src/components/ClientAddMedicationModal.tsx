@@ -20,6 +20,7 @@ export default function ClientAddMedicationModal({
     dosage: '',
     unit: 'mg',
     treatment_duration_days: '30',
+    total_quantity: '',
     start_date: new Date().toISOString().split('T')[0],
     notes: '',
     recurrence_type: 'continuous',
@@ -58,6 +59,10 @@ export default function ClientAddMedicationModal({
       newErrors.treatment_duration_days = 'Duração deve ser pelo menos 1 dia';
     }
 
+    if (formData.total_quantity && !/^\d+$/.test(formData.total_quantity)) {
+      newErrors.total_quantity = 'Digite apenas números';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -82,6 +87,7 @@ export default function ClientAddMedicationModal({
           name: formData.name.trim(),
           dosage: dosageWithUnit,
           schedules: schedules.filter(s => s.trim() !== '').join(', '),
+          total_quantity: formData.total_quantity.trim() ? parseInt(formData.total_quantity, 10) : null,
           treatment_duration_days: parseInt(formData.treatment_duration_days),
           start_date: formData.start_date,
           notes: formData.notes.trim() || null,
@@ -131,6 +137,23 @@ export default function ClientAddMedicationModal({
             />
             {errors.name && (
               <p className="text-red-600 text-sm mt-1">{errors.name}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Quantidade de cápsulas (opcional)
+            </label>
+            <input
+              type="number"
+              value={formData.total_quantity}
+              onChange={(e) => setFormData({ ...formData, total_quantity: e.target.value })}
+              placeholder="Ex: 60"
+              min="0"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F3C4C] focus:border-transparent outline-none"
+            />
+            {errors.total_quantity && (
+              <p className="text-red-600 text-sm mt-1">{errors.total_quantity}</p>
             )}
           </div>
 
