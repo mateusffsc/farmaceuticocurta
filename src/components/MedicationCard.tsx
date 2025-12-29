@@ -188,7 +188,7 @@ export default function MedicationCard({ medication, doses, clientId, pharmacyId
                     )}
                   </div>
 
-                  {dose.status === 'pending' && (
+                  {(dose.status === 'pending' || dose.status === 'skipped') && (
                     <div className="flex gap-2 mt-2">
                       <button
                         onClick={(e) => {
@@ -199,15 +199,28 @@ export default function MedicationCard({ medication, doses, clientId, pharmacyId
                       >
                         Tomei agora
                       </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDoseAction(dose.id, 'skipped');
-                        }}
-                        className="flex-1 bg-red-600 text-white py-3 rounded-xl active:bg-red-700 transition text-sm font-semibold active:scale-95"
-                      >
-                        Pular dose
-                      </button>
+                      {dose.status === 'pending' && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDoseAction(dose.id, 'skipped');
+                          }}
+                          className="flex-1 bg-red-600 text-white py-3 rounded-xl active:bg-red-700 transition text-sm font-semibold active:scale-95"
+                        >
+                          Pular dose
+                        </button>
+                      )}
+                      {dose.status === 'skipped' && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDoseAction(dose.id, 'skipped');
+                          }}
+                          className="flex-1 bg-red-600 text-white py-3 rounded-xl active:bg-red-700 transition text-sm font-semibold active:scale-95"
+                        >
+                          Manter como perdida
+                        </button>
+                      )}
                     </div>
                   )}
 

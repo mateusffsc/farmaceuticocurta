@@ -178,17 +178,7 @@ export default function ClientDashboard({ onLogout }: ClientDashboardProps) {
     }
   };
 
-  const getTodayDoses = () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    return doseRecords.filter(dose => {
-      const doseDate = new Date(dose.scheduled_time);
-      return doseDate >= today && doseDate < tomorrow;
-    });
-  };
+  // getTodayDoses removido: a listagem agora inclui doses atrasadas não tomadas
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -406,9 +396,21 @@ export default function ClientDashboard({ onLogout }: ClientDashboardProps) {
         ) : currentView === 'home' && (
           <div className="space-y-4">
             {medications.map((medication) => {
-              const medDoses = getTodayDoses().filter(
-                dose => dose.medication_id === medication.id
-              );
+              const now = new Date();
+              const today = new Date(now); today.setHours(0, 0, 0, 0);
+              const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+
+              const medDoses = doseRecords
+                .filter(dose => {
+                  if (dose.medication_id !== medication.id) return false;
+                  const t = new Date(dose.scheduled_time);
+                  const isToday = t >= today && t < tomorrow;
+                  const isOverdueNotTaken = t < today && dose.status !== 'taken';
+                  return isToday || isOverdueNotTaken;
+                })
+                .sort((a, b) =>
+                  new Date(a.scheduled_time).getTime() - new Date(b.scheduled_time).getTime()
+                );
               return (
                 <MedicationCard
                   key={medication.id}
